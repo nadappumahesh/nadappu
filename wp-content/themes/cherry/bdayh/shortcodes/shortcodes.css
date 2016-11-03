@@ -1,0 +1,27 @@
+﻿* { padding: 0; margin: 0; outline: none; list-style: none; border: 0 none; text-decoration: none; }
+a { color: #4f5053; text-decoration: none; -webkit-transition: color 300ms ease; -moz-transition: color 300ms ease; -ms-transition: color 300ms ease; -o-transition: color 300ms ease; transition: color 300ms ease; }
+a:hover { color: #b2251f; }
+body { font-family: sans-serif; font-size: 12px; }
+label { float: left; width: 170px; }
+#GalleryShortcode { padding: 15px !important; }
+#GalleryShortcode p { clear: both; overflow: hidden; padding: 5px; }
+span { float: left; }
+textarea,
+input[type="text"],
+input[type="password"],
+input[type="file"],
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+input[type="email"],
+input[type="number"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+select { border-color: #DFDFDF; background-color: white; margin: 3px; -khtml-border-radius: 2px; -webkit-border-radius: 2px; -moz-border-radius: 2px; border-radius: 2px; }
+select { padding: 2px; height: 2em; width: 210px; font-family: sans-serif; font-size: 12px; }
+textarea,
+input { -webkit-border-radius: 3px; border-radius: 3px; border-width: 1px; border-style: solid; font-family: sans-serif; font-size: 12px; }
+input { padding: 5px; width: 200px; font-family: sans-serif; font-size: 12px; }
+textarea { width: 425px; height: 200px; }
+a.add { height: 35px; font: bold 13px arial; display: inline-block; line-height: 35px; padding: 0 10px; color: #FFF; text-shadow: #000 0 1px 1px; background-color: #ba2a0f; -webkit-box-shadow: 0 1px 1px rgba(0,0,0,0.1), inset 0 0 50px rgba(0,0,0,.35), inset 0 0 0 1px rgba(0,0,0,.1); -moz-box-shadow: 0 1px 1px rgba(0, 0, 0, .0.1), inset 0 0 50px rgba(0,0,0,.35), inset 0 0 0 1px rgba(0,0,0,.1); box-shadow: 0 1px 1px rgba(0,0,0,0.1), inset 0 0 50px rgba(0,0,0,.35), inset 0 0 0 1px rgba(0,0,0,.1); background-image: -webkit-linear-gradient(bottom, rgba(0,0,0,.41), rgba(0,0,0,0)); background-image: -moz-linear-gradient(bottom, rgba(0,0,0,.41), rgba(0,0,0,0)); background-image: -o-linear-gradient(bottom, rgba(0,0,0,.41), rgba(0,0,0,0)); background-image: -ms-linear-gradient(bottom, rgba(0,0,0,.41), rgba(0,0,0,0)); background-image: linear-gradient(to top, rgba(0,0,0,.41), rgba(0,0,0,0)); }

@@ -1,0 +1,79 @@
+<?php
+
+	add_action( 'widgets_init', 'categortnewinpic_widget' );
+	function categortnewinpic_widget() {
+		register_widget( 'categortnewinpic' );
+	}
+
+	class categortnewinpic extends WP_Widget {
+
+		function categortnewinpic() {
+			$widget_ops = array( 'classname' => 'categortnewinpic' );
+			$control_ops = array( 'width' => 250, 'height' => 350, 'id_base' => 'categortnewinpic-widget' );
+			$this->WP_Widget( 'categortnewinpic-widget',Cherry .' - News In Pictures', $widget_ops, $control_ops );
+		}
+
+		function widget( $args, $instance ) {
+			extract( $args );
+
+			$title = apply_filters('widget_title', $instance['cat_posts_title'] );
+			$numb_posts = $instance['numb_posts'];
+			$cats_id = $instance['cats_id'];
+			$thumb = $instance['thumb'];
+
+			echo $before_widget;
+			echo $before_title;
+			echo $title ; ?>
+			<?php echo $after_title; ?>
+
+			<?php cherry_categortnewinpic($numb_posts , $thumb , $cats_id)?>
+
+			<?php
+			echo $after_widget;
+		}
+
+		function update( $new_instance, $old_instance ) {
+			$instance = $old_instance;
+			$instance['cat_posts_title'] = strip_tags( $new_instance['cat_posts_title'] );
+			$instance['numb_posts'] = strip_tags( $new_instance['numb_posts'] );
+			$instance['cats_id'] = implode(',' , $new_instance['cats_id']  );
+			$instance['thumb'] = strip_tags( $new_instance['thumb'] );
+			return $instance;
+		}
+
+		function form( $instance ) {
+			$defaults = array( 'cat_posts_title' =>__( 'News In Pictures' , 'bd'), 'numb_posts' => '9' , 'cats_id' => '1' , 'thumb' => 'true' );
+			$instance = wp_parse_args( (array) $instance, $defaults );
+			$categories_obj = get_categories();
+			$categories = array();
+
+				foreach ($categories_obj as $pn_cat) {
+					$categories[$pn_cat->cat_ID] = $pn_cat->cat_name;
+				}
+			?>
+
+			<p>
+			  <label for="<?php echo $this->get_field_id( 'cat_posts_title' ); ?>"><?php _e('Title','bd') ?> : </label>
+			  <input id="<?php echo $this->get_field_id( 'cat_posts_title' ); ?>" name="<?php echo $this->get_field_name( 'cat_posts_title' ); ?>" value="<?php echo $instance['cat_posts_title']; ?>" class="widefat" type="text" />
+			</p>
+			<p>
+			  <label for="<?php echo $this->get_field_id( 'numb_posts' ); ?>"><?php _e('Number of posts to show','bd') ?>: </label>
+			  <input id="<?php echo $this->get_field_id( 'numb_posts' ); ?>" name="<?php echo $this->get_field_name( 'numb_posts' ); ?>" value="<?php echo $instance['numb_posts']; ?>" type="text" size="3" />
+			</p>
+			<p>
+			  <?php $cats_id = explode ( ',' , $instance['cats_id'] ) ; ?>
+			  <label for="<?php echo $this->get_field_id( 'cats_id' ); ?>"><?php _e('Category : ','bd') ?></label>
+			  <select multiple="multiple" id="<?php echo $this->get_field_id( 'cats_id' ); ?>[]" name="<?php echo $this->get_field_name( 'cats_id' ); ?>[]">
+			    <?php foreach ($categories as $key => $option) { ?>
+			    <option value="<?php echo $key ?>" <?php if ( in_array( $key , $cats_id ) ) { echo ' selected="selected"' ; } ?>><?php echo $option; ?></option>
+			    <?php } ?>
+			  </select>
+			</p>
+			<p style="display: none;">
+			  <label for="<?php echo $this->get_field_id( 'thumb' ); ?>">Display Thumbinals : </label>
+			  <input id="<?php echo $this->get_field_id( 'thumb' ); ?>" name="<?php echo $this->get_field_name( 'thumb' ); ?>" value="true" <?php if( $instance['thumb'] ) echo 'checked="checked"'; ?> type="checkbox" />
+			</p>
+			<?php
+		}
+	}
+?>

@@ -19,7 +19,8 @@
 define( 'WP_AUTO_UPDATE_CORE', false );
 //define('WP_CACHE', true); //Added by WP-Cache Manager
 define( 'WPCACHEHOME', '/var/www/nadappu/www/nadappu/wp-content/plugins/wp-super-cache/' ); //Added by WP-Cache Manager
-define('DB_NAME', 'nada_ada2');
+define('DB_NAME', 'nadappu26_mar_2017');
+//define('DB_NAME', 'nada_ada2');
 //define('DB_NAME', 'nada_nada1');
 
 /** MySQL database username */

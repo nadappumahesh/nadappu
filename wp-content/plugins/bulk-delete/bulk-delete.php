@@ -5,7 +5,7 @@
  * Plugin URI: http://bulkwp.com
  * Description: Bulk delete users and posts from selected categories, tags, post types, custom taxonomies or by post status like drafts, scheduled posts, revisions etc.
  * Donate Link: http://sudarmuthu.com/if-you-wanna-thank-me
- * Version: 5.5.1
+ * Version: 5.5.5
  * License: GPL
  * Author: Sudar
  * Author URI: http://sudarmuthu.com/
@@ -14,7 +14,7 @@
  * === RELEASE NOTES ===
  * Check readme file for full release notes
  *
- * @version    5.5.1
+ * @version    5.5.5
  * @author     Sudar
  * @package    BulkDelete
  */
@@ -48,18 +48,19 @@ final class Bulk_Delete {
 	 */
 	private static $instance;
 
+	private $controller;
+
 	// version
-	const VERSION                   = '5.5.1';
+	const VERSION                   = '5.5.5';
 
 	// Numeric constants
-	const MENU_ORDER                = '26.9966';
+	const MENU_ORDER                = '26';
 
 	// page slugs
 	const POSTS_PAGE_SLUG           = 'bulk-delete-posts';
 	const PAGES_PAGE_SLUG           = 'bulk-delete-pages';
 	const CRON_PAGE_SLUG            = 'bulk-delete-cron';
 	const ADDON_PAGE_SLUG           = 'bulk-delete-addon';
-	const INFO_PAGE_SLUG            = 'bulk-delete-info';
 
 	// JS constants
 	const JS_HANDLE                 = 'bulk-delete';
@@ -118,7 +119,6 @@ final class Bulk_Delete {
 	public $pages_page;
 	public $cron_page;
 	public $addon_page;
-	public $info_page;
 	public $settings_page;
 	public $meta_page;
 	public $misc_page;
@@ -210,7 +210,11 @@ final class Bulk_Delete {
 	 */
 	private function includes() {
 		require_once self::$PLUGIN_DIR . '/include/base/class-bd-meta-box-module.php';
+		require_once self::$PLUGIN_DIR . '/include/base/users/class-bd-user-meta-box-module.php';
+		require_once self::$PLUGIN_DIR . '/include/base/class-bd-base-page.php';
 		require_once self::$PLUGIN_DIR . '/include/base/class-bd-page.php';
+
+		require_once self::$PLUGIN_DIR . '/include/controller/class-bd-controller.php';
 
 		require_once self::$PLUGIN_DIR . '/include/ui/form.php';
 
@@ -233,7 +237,7 @@ final class Bulk_Delete {
 		require_once self::$PLUGIN_DIR . '/include/settings/setting-helpers.php';
 		require_once self::$PLUGIN_DIR . '/include/settings/class-bd-settings.php';
 
-		require_once self::$PLUGIN_DIR . '/include/system-info/class-bulk-delete-system-info.php';
+		require_once self::$PLUGIN_DIR . '/include/system-info/class-bd-system-info-page.php';
 
 		require_once self::$PLUGIN_DIR . '/include/util/class-bd-util.php';
 		require_once self::$PLUGIN_DIR . '/include/util/query.php';
@@ -241,6 +245,7 @@ final class Bulk_Delete {
 		require_once self::$PLUGIN_DIR . '/include/compatibility/simple-login-log.php';
 		require_once self::$PLUGIN_DIR . '/include/compatibility/the-event-calendar.php';
 		require_once self::$PLUGIN_DIR . '/include/compatibility/woocommerce.php';
+		require_once self::$PLUGIN_DIR . '/include/compatibility/advanced-custom-fields-pro.php';
 
 		require_once self::$PLUGIN_DIR . '/include/deprecated/class-bulk-delete-users.php';
 		require_once self::$PLUGIN_DIR . '/include/deprecated/deprecated.php';
@@ -281,10 +286,9 @@ final class Bulk_Delete {
 	 * @return void
 	 */
 	private function setup_actions() {
+		$this->controller = new BD_Controller();
+
 		add_action( 'admin_menu', array( $this, 'add_menu' ) );
-		add_action( 'admin_init', array( $this, 'request_handler' ) );
-		add_action( 'bd_pre_bulk_action', array( $this, 'increase_timeout' ), 9 );
-		add_action( 'bd_before_scheduler', array( $this, 'increase_timeout' ), 9 );
 	}
 
 	/**
@@ -314,9 +318,8 @@ final class Bulk_Delete {
 		 */
 		do_action( 'bd_before_secondary_menus' );
 
-		$this->cron_page  = add_submenu_page( self::POSTS_PAGE_SLUG, __( 'Bulk Delete Schedules'  , 'bulk-delete' ), __( 'Scheduled Jobs', 'bulk-delete' ), 'delete_posts'    , self::CRON_PAGE_SLUG , array( $this, 'display_cron_page' ) );
-		$this->addon_page = add_submenu_page( self::POSTS_PAGE_SLUG, __( 'Addon Licenses'         , 'bulk-delete' ), __( 'Addon Licenses', 'bulk-delete' ), 'activate_plugins', self::ADDON_PAGE_SLUG, array( 'BD_License', 'display_addon_page' ) );
-		$this->info_page  = add_submenu_page( self::POSTS_PAGE_SLUG, __( 'Bulk Delete System Info', 'bulk-delete' ), __( 'System Info'   , 'bulk-delete' ), 'manage_options'  , self::INFO_PAGE_SLUG , array( 'Bulk_Delete_System_Info', 'display_system_info' ) );
+		$this->cron_page  = add_submenu_page( self::POSTS_PAGE_SLUG, __( 'Bulk Delete Schedules', 'bulk-delete' ), __( 'Scheduled Jobs', 'bulk-delete' ), 'delete_posts'    , self::CRON_PAGE_SLUG , array( $this, 'display_cron_page' ) );
+		$this->addon_page = add_submenu_page( self::POSTS_PAGE_SLUG, __( 'Addon Licenses'       , 'bulk-delete' ), __( 'Addon Licenses', 'bulk-delete' ), 'activate_plugins', self::ADDON_PAGE_SLUG, array( 'BD_License', 'display_addon_page' ) );
 
 		/**
 		 * Runs just after adding all menu items to Bulk WP main menu
@@ -367,7 +370,7 @@ final class Bulk_Delete {
 		add_meta_box( self::BOX_CATEGORY      , __( 'By Category'          , 'bulk-delete' ) , 'Bulk_Delete_Posts::render_delete_posts_by_category_box'  , $this->posts_page , 'advanced' );
 		add_meta_box( self::BOX_TAG           , __( 'By Tag'               , 'bulk-delete' ) , 'Bulk_Delete_Posts::render_delete_posts_by_tag_box'       , $this->posts_page , 'advanced' );
 		add_meta_box( self::BOX_TAX           , __( 'By Custom Taxonomy'   , 'bulk-delete' ) , 'Bulk_Delete_Posts::render_delete_posts_by_taxonomy_box'  , $this->posts_page , 'advanced' );
-		add_meta_box( self::BOX_POST_TYPE     , __( 'By Custom Post Types' , 'bulk-delete' ) , 'Bulk_Delete_Posts::render_delete_posts_by_post_type_box' , $this->posts_page , 'advanced' );
+		add_meta_box( self::BOX_POST_TYPE     , __( 'By Custom Post Type'  , 'bulk-delete' ) , 'Bulk_Delete_Posts::render_delete_posts_by_post_type_box' , $this->posts_page , 'advanced' );
 		add_meta_box( self::BOX_URL           , __( 'By URL'               , 'bulk-delete' ) , 'Bulk_Delete_Posts::render_delete_posts_by_url_box'       , $this->posts_page , 'advanced' );
 		add_meta_box( self::BOX_POST_REVISION , __( 'By Post Revision'     , 'bulk-delete' ) , 'Bulk_Delete_Posts::render_posts_by_revision_box'         , $this->posts_page , 'advanced' );
 
@@ -407,7 +410,7 @@ final class Bulk_Delete {
 	 * @since 5.0
 	 */
 	public function add_delete_pages_meta_boxes() {
-		add_meta_box( self::BOX_PAGE_STATUS     , __( 'By Page status' , 'bulk-delete' ) , 'Bulk_Delete_Pages::render_delete_pages_by_status_box' , $this->pages_page , 'advanced' );
+		add_meta_box( self::BOX_PAGE_STATUS, __( 'By Page Status', 'bulk-delete' ), 'Bulk_Delete_Pages::render_delete_pages_by_status_box', $this->pages_page, 'advanced' );
 
 		/**
 		 * Add meta box in delete pages page
@@ -501,9 +504,7 @@ final class Bulk_Delete {
                 <p><strong><?php _e( 'WARNING: Posts deleted once cannot be retrieved back. Use with caution.', 'bulk-delete' ); ?></strong></p>
             </div>
 
-            <div id="postbox-container-1" class="postbox-container">
-                <iframe frameBorder="0" height = "1500" src = "http://sudarmuthu.com/projects/wordpress/bulk-delete/sidebar.php?color=<?php echo get_user_option( 'admin_color' ); ?>&version=<?php echo self::VERSION; ?>"></iframe>
-            </div>
+			<?php bd_render_sidebar_iframe(); ?>
 
             <div id="postbox-container-2" class="postbox-container">
                 <?php do_meta_boxes( '', 'advanced', null ); ?>
@@ -553,9 +554,7 @@ final class Bulk_Delete {
                 <p><strong><?php _e( 'WARNING: Pages deleted once cannot be retrieved back. Use with caution.', 'bulk-delete' ); ?></strong></p>
             </div>
 
-            <div id="postbox-container-1" class="postbox-container">
-                <iframe frameBorder="0" height = "1500" src = "http://sudarmuthu.com/projects/wordpress/bulk-delete/sidebar.php?color=<?php echo get_user_option( 'admin_color' ); ?>&version=<?php echo self::VERSION; ?>"></iframe>
-            </div>
+			<?php bd_render_sidebar_iframe(); ?>
 
             <div id="postbox-container-2" class="postbox-container">
                 <?php do_meta_boxes( '', 'advanced', null ); ?>
@@ -612,75 +611,6 @@ final class Bulk_Delete {
 		 * @since 5.0
 		 */
 		do_action( 'bd_admin_footer_cron_page' );
-	}
-
-	/**
-	 * Handle both POST and GET requests.
-	 * This method automatically triggers all the actions after checking the nonce.
-	 */
-	public function request_handler() {
-		if ( isset( $_POST['bd_action'] ) ) {
-			$bd_action = sanitize_text_field( $_POST['bd_action'] );
-			$nonce_valid = false;
-
-			if ( 'delete_pages_' === substr( $_POST['bd_action'], 0, strlen( 'delete_pages_' ) )
-				&& check_admin_referer( 'sm-bulk-delete-pages', 'sm-bulk-delete-pages-nonce' ) ) {
-				$nonce_valid = true;
-			}
-
-			if ( 'delete_posts_' === substr( $_POST['bd_action'], 0, strlen( 'delete_posts_' ) )
-				&& check_admin_referer( 'sm-bulk-delete-posts', 'sm-bulk-delete-posts-nonce' ) ) {
-				$nonce_valid = true;
-			}
-
-			if ( 'delete_meta_' === substr( $_POST['bd_action'], 0, strlen( 'delete_meta_' ) )
-				&& check_admin_referer( 'sm-bulk-delete-meta', 'sm-bulk-delete-meta-nonce' ) ) {
-				$nonce_valid = true;
-			}
-
-			/**
-			 * Perform nonce check.
-			 *
-			 * @since 5.5
-			 */
-			if ( ! apply_filters( 'bd_action_nonce_check', $nonce_valid, $bd_action ) ) {
-				return;
-			}
-
-			/**
-			 * Before performing a bulk action.
-			 * This hook is for doing actions just before performing any bulk operation
-			 *
-			 * @since 5.4
-			 */
-			do_action( 'bd_pre_bulk_action', $bd_action );
-
-			/**
-			 * Perform the bulk operation.
-			 * This hook is for doing the bulk operation. Nonce check has already happened by this point.
-			 *
-			 * @since 5.4
-			 */
-			do_action( 'bd_' . $_POST['bd_action'], $_POST );
-		}
-
-		if ( isset( $_GET['bd_action'] ) ) {
-			// TODO: check nonce for get requests as well.
-			do_action( 'bd_' . $_GET['bd_action'], $_GET );
-		}
-	}
-
-	/**
-	 * Increase PHP timeout.
-	 *
-	 * This is to prevent bulk operations from timing out
-	 *
-	 * @since 5.4
-	 */
-	public function increase_timeout() {
-		if ( ! ini_get( 'safe_mode' ) ) {
-			@set_time_limit( 0 );
-		}
 	}
 }
 

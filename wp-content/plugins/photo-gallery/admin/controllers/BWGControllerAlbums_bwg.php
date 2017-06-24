@@ -21,6 +21,15 @@ class BWGControllerAlbums_bwg {
   public function execute() {
     $task = WDWLibrary::get('task');
     $id = WDWLibrary::get('current_id', 0);
+
+
+    if($task != ''){
+      if(!WDWLibrary::verify_nonce('albums_bwg')){
+        die('Sorry, your nonce did not verify.');
+      }
+    }
+    
+
     $message = WDWLibrary::get('message');
     echo WDWLibrary::message_id($message);
     if (method_exists($this, $task)) {
@@ -62,7 +71,9 @@ class BWGControllerAlbums_bwg {
   public function save() {
     $message = $this->save_db();
     $page = WDWLibrary::get('page');
-    WDWLibrary::spider_redirect(add_query_arg(array('page' => $page, 'task' => 'display', 'message' => $message), admin_url('admin.php')));
+    $query_url = wp_nonce_url( admin_url('admin.php'), 'albums_bwg', 'bwg_nonce' );
+    $query_url = add_query_arg(array('page' => $page, 'task' => 'display', 'message' => $message), $query_url);
+    WDWLibrary::spider_redirect($query_url);
   }
 
   public function apply() {
@@ -71,7 +82,9 @@ class BWGControllerAlbums_bwg {
     $id = (int) $wpdb->get_var('SELECT MAX(`id`) FROM ' . $wpdb->prefix . 'bwg_album');
     $current_id = WDWLibrary::get('current_id', $id);
     $page = WDWLibrary::get('page');
-    WDWLibrary::spider_redirect(add_query_arg(array('page' => $page, 'task' => 'edit', 'current_id' => $current_id, 'message' => $message), admin_url('admin.php')));
+    $query_url = wp_nonce_url( admin_url('admin.php'), 'albums_bwg', 'bwg_nonce' );
+    $query_url = add_query_arg(array('page' => $page, 'task' => 'edit', 'current_id' => $current_id, 'message' => $message),$query_url);
+    WDWLibrary::spider_redirect($query_url);
   }
 
   // Return random image from gallery or album for album preview.
@@ -150,8 +163,18 @@ class BWGControllerAlbums_bwg {
       'slug' => $slug,
       'description' => $description,
       'preview_image' => $preview_image,
-      'author' => $author,
       'published' => $published), array('id' => $id));
+
+      /* Update data in corresponding posts.*/
+      $query2 = "SELECT ID, post_content FROM " . $wpdb->posts . " WHERE post_type = 'bwg_album'";
+      $posts = $wpdb->get_results($query2, OBJECT);
+      foreach ($posts as $post) {
+        $post_content = $post->post_content;
+        if (strpos($post_content, ' type="album" ') && strpos($post_content, ' album_id="' . $id . '" ')) {
+          $album_post = array('ID' => $post->ID, 'post_title' => $name, 'post_name' => $slug);
+          wp_update_post($album_post);
+        }
+      }
     }
     else {
       $save = $wpdb->insert($wpdb->prefix . 'bwg_album', array(
@@ -221,8 +244,19 @@ class BWGControllerAlbums_bwg {
     else {
       $message = 2;
     }
+    /* Delete corresponding posts and their meta.*/
+    $query2 = "SELECT ID, post_content FROM " . $wpdb->posts . " WHERE post_type = 'bwg_album'";
+    $posts = $wpdb->get_results($query2, OBJECT);
+    foreach ($posts as $post) {
+      $post_content = $post->post_content;
+      if (strpos($post_content, ' type="album" ') && strpos($post_content, ' album_id="'.$id.'" ')) {
+        wp_delete_post($post->ID, TRUE);
+      }
+    }
     $page = WDWLibrary::get('page');
-    WDWLibrary::spider_redirect(add_query_arg(array('page' => $page, 'task' => 'display', 'message' => $message), admin_url('admin.php')));
+    $query_url = wp_nonce_url( admin_url('admin.php'), 'albums_bwg', 'bwg_nonce' );
+    $query_url = add_query_arg(array('page' => $page, 'task' => 'display', 'message' => $message), $query_url);
+    WDWLibrary::spider_redirect($query_url);
   }
   
   public function delete_all() {
@@ -242,10 +276,12 @@ class BWGControllerAlbums_bwg {
       $message = 5;
     }
     else {
-      $message = 2;
+      $message = 6;
     }
     $page = WDWLibrary::get('page');
-    WDWLibrary::spider_redirect(add_query_arg(array('page' => $page, 'task' => 'display', 'message' => $message), admin_url('admin.php')));
+    $query_url = wp_nonce_url( admin_url('admin.php'), 'albums_bwg', 'bwg_nonce' );
+    $query_url = add_query_arg(array('page' => $page, 'task' => 'display', 'message' => $message), $query_url);
+    WDWLibrary::spider_redirect($query_url);
   }
 
   public function publish($id) {
@@ -258,7 +294,9 @@ class BWGControllerAlbums_bwg {
       $message = 2;
     }
     $page = WDWLibrary::get('page');
-    WDWLibrary::spider_redirect(add_query_arg(array('page' => $page, 'task' => 'display', 'message' => $message), admin_url('admin.php')));
+    $query_url = wp_nonce_url( admin_url('admin.php'), 'albums_bwg', 'bwg_nonce' );
+    $query_url = add_query_arg(array('page' => $page, 'task' => 'display', 'message' => $message), $query_url);
+    WDWLibrary::spider_redirect($query_url);
   }
   
   public function publish_all() {
@@ -284,7 +322,9 @@ class BWGControllerAlbums_bwg {
       $message = 6;
     }
     $page = WDWLibrary::get('page');
-    WDWLibrary::spider_redirect(add_query_arg(array('page' => $page, 'task' => 'display', 'message' => $message), admin_url('admin.php')));
+    $query_url = wp_nonce_url( admin_url('admin.php'), 'albums_bwg', 'bwg_nonce' );
+    $query_url = add_query_arg(array('page' => $page, 'task' => 'display', 'message' => $message), $query_url);
+    WDWLibrary::spider_redirect($query_url);
   }
 
   public function unpublish($id) {
@@ -297,7 +337,9 @@ class BWGControllerAlbums_bwg {
       $message = 2;
     }
     $page = WDWLibrary::get('page');
-    WDWLibrary::spider_redirect(add_query_arg(array('page' => $page, 'task' => 'display', 'message' => $message), admin_url('admin.php')));
+    $query_url = wp_nonce_url( admin_url('admin.php'), 'albums_bwg', 'bwg_nonce' );
+    $query_url = add_query_arg(array('page' => $page, 'task' => 'display', 'message' => $message), $query_url);
+    WDWLibrary::spider_redirect($query_url);
   }
   
   public function unpublish_all() {
@@ -323,12 +365,15 @@ class BWGControllerAlbums_bwg {
       $message = 6;
     }
     $page = WDWLibrary::get('page');
-    WDWLibrary::spider_redirect(add_query_arg(array('page' => $page, 'task' => 'display', 'message' => $message), admin_url('admin.php')));
+    $query_url = wp_nonce_url( admin_url('admin.php'), 'albums_bwg', 'bwg_nonce' );
+    $query_url = add_query_arg(array('page' => $page, 'task' => 'display', 'message' => $message), $query_url);
+    WDWLibrary::spider_redirect($query_url);
   }
   
   public function save_order($flag = TRUE) {
     global $wpdb;
     $album_ids_col = $wpdb->get_col('SELECT id FROM ' . $wpdb->prefix . 'bwg_album');
+    $message = 0;
     if ($album_ids_col) {
       foreach ($album_ids_col as $album_id) {
         if (isset($_POST['order_input_' . $album_id])) {
@@ -349,7 +394,9 @@ class BWGControllerAlbums_bwg {
       }
     }
     $page = WDWLibrary::get('page');
-    WDWLibrary::spider_redirect(add_query_arg(array('page' => $page, 'task' => 'display', 'message' => $message), admin_url('admin.php')));
+    $query_url = wp_nonce_url( admin_url('admin.php'), 'albums_bwg', 'bwg_nonce' );
+    $query_url = add_query_arg(array('page' => $page, 'task' => 'display', 'message' => $message), $query_url);
+    WDWLibrary::spider_redirect($query_url);
   }
   ////////////////////////////////////////////////////////////////////////////////////////
   // Getters & Setters                                                                  //

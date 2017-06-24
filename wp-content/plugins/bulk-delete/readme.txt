@@ -2,9 +2,9 @@
 Contributors: sudar  
 Tags: mass, bulk, delete, post, comment, draft, revision, page, user, meta fields  
 Requires at least: 3.9  
-Tested up to: 4.3  
+Tested up to: 4.7.2  
 Donate Link: http://sudarmuthu.com/if-you-wanna-thank-me  
-Stable tag: 5.5.1  
+Stable tag: 5.5.5  
 
 Bulk delete posts, pages, users, attachments and meta fields based on different conditions and filters.
 
@@ -83,6 +83,7 @@ Like posts, all the above options support the following filters as well
 - Delete users based on user role
 - Delete users based on user meta fields
 - Delete users who have not logged in in the last X days
+- Delete users based on their registered date
 
 #### Deleting Meta Fields
 
@@ -231,39 +232,83 @@ You can contact us by posting about it in our [support forum](http://bulkwp.com/
 == Screenshots ==
 
 
-1. The above screenshot shows how you can delete Posts by post status. You can choose between drafts, pending posts, scheduled posts, privates posts.
+1. The above screenshot shows how you can delete posts by post status. You can choose to delete published posts, draft posts, pending posts, scheduled posts, private posts or sticky posts.
 
 
-2. The above screenshot shows how you can delete posts by category.
+2. The above screenshot shows how you can delete posts by category. You can choose the post type from which you want to delete the posts.
 
 
 3. The above screenshot shows how you can delete posts by tag.
 
 
-4. The above screenshot shows how you can delete posts by custom taxonomy.
+4. The above screenshot shows how you can delete posts by custom taxonomy. You can choose the post type, taxonomy name and the terms from which you want to delete the posts.
 
 
-5. The above screenshot shows how you can delete posts by post type.
+5. The above screenshot shows how you can delete posts by custom post type.
 
 
-6. The above screenshot shows how you can delete pages by post status. You can choose between draft pages, pending pages, scheduled pages and privates pages.
+6. The above screenshot shows how you can delete pages by status. You can choose between published pages, draft pages, pending pages, scheduled pages and private pages.
 
 
-7. The above screenshot shows how you can delete users by user role.
+7. The above screenshot shows how you can delete users by user role. You can also filter by user's registered date or login date.
 
 
-8. The above screenshot shows how you can schedule auto delete of posts. Note that this feature is available only when you buy [pro addons](http://bulkwp.com/addons/?utm_source=wprepo&utm_campaign=BulkDelete&utm_medium=readme&utm_content=pro).
+8. The above screenshot shows how you can delete users by user meta You can also filter by user's registered date or login date.
 
 
-9. The above screenshot shows how you can enable/disable different sections in the delete posts page of the Plugin. Similarly you can enable different sections in the other pages of the plugin.
+9. The above screenshot shows how you can enable/disable different sections in the delete posts page of the Plugin. Similarly you can enable different sections in the other pages of the plugin like delete posts, delete pages, delete users, delete meta fields and delete misc.
 
 
-10. The above screenshot shows the different pages that are available in the plugin.
+10. The above screenshot shows how you can enable/disable different sections in the delete users page of the Plugin.
+
+
+11. The above screenshot shows how you can enable/disable different sections in the delete meta fields page of the Plugin.
+
+
+12. The above screenshot shows the different pages that are available in the plugin.
+
+
+13. The above screenshot shows how you can schedule auto delete of posts. Note that this feature is available only when you buy [pro addons](http://bulkwp.com/addons/?utm_source=wprepo&utm_campaign=BulkDelete&utm_medium=readme&utm_content=pro).
 
 == Readme Generator ==
 
 This Readme file was generated using <a href = 'http://sudarmuthu.com/wordpress/wp-readme'>wp-readme</a>, which generates readme files for WordPress Plugins.
 == Changelog ==
+
+= 2017-01-28 - v5.5.5 - (Dev time: 1 hour) =
+
+- Bug Fixes
+	- Fixed a bug that caused Jetpack messages to be not deleted properly.
+
+= 2016-02-13 - v5.5.4 - (Dev time: 5 hours) =
+
+- Bug Fixes
+	- Security fix that prevents non-privileged users from deleting posts.
+
+- Enhancements
+	- Lot of code refactoring to improve quality.
+
+= 2015-11-02 - v5.5.3 - (Dev time: 3 hours) =
+- New Features
+	- Added the ability to delete users based on their registered date. (Issue #115)
+
+- Enhancements
+	- Sanitize action post field before using it.
+	- Updated Screenshots that are linked in the readme.
+
+- Bug Fixes
+	- Fixed a bug that caused a warning while updating addons. (Issue #113)
+	- Fixed typos and enhanced labels.
+
+= 2015-10-05 - v5.5.2 (Dev time: 2 hours) =
+- New Features
+	- Added the ability to delete users who have never logged in.
+
+- Enhancements
+	- Added compatibility with "Advanced Custom Fields Pro" plugin.
+
+- Bug Fixes
+	- Fixed issue in deleting posts by category
 
 = 2015-08-15 - v5.5.1 (Dev time: 2.5 hours) =
 - New Features
@@ -529,6 +574,18 @@ This Readme file was generated using <a href = 'http://sudarmuthu.com/wordpress/
 *   First version
 
 == Upgrade Notice ==
+
+= 5.5.5 =
+Fixed a bug that caused Jetpack messages to be not deleted properly
+
+= 5.5.4 =
+Fixed a security bug that allowed non-privileged users to delete posts
+
+= 5.5.3 =
+Added the ability to delete users based on registration date
+
+= 5.5.2 =
+Added the ability to delete users who have never logged in
 
 = 5.5.1 =
 Fixed compatibility issues with WooCommerce and The Event Calendar plugins

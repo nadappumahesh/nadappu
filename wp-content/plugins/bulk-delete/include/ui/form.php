@@ -135,7 +135,7 @@ function bd_render_cron_settings( $slug, $addon_url ) {
 
 	<tr>
 		<td scope="row" colspan="2">
-			<?php _e( 'Enter time in Y-m-d H:i:s format or enter now to use current time', 'bulk-delete' );?>
+			<?php _e( 'Enter time in <strong>Y-m-d H:i:s</strong> format or enter <strong>now</strong> to use current time', 'bulk-delete' );?>
 		</td>
 	</tr>
 <?php
@@ -177,4 +177,16 @@ function bd_render_post_type_dropdown( $slug ) {
 	</tr>
 <?php
 }
+
+/**
+ * Render sidebar iframe.
+ *
+ * @since 5.5.4
+ */
+function bd_render_sidebar_iframe() {
 ?>
+	<div id="postbox-container-1" class="postbox-container">
+		<iframe frameBorder="0" height="1500" src="http://sudarmuthu.com/projects/wordpress/bulk-delete/sidebar.php?color=<?php echo esc_attr( get_user_option( 'admin_color' ) ); ?>&version=<?php echo esc_attr( Bulk_Delete::VERSION ); ?>"></iframe>
+	</div>
+<?php
+}

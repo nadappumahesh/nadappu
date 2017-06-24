@@ -32,23 +32,28 @@ class BWGModelGalleries_bwg {
 
   public function get_image_rows_data($gallery_id) {
     global $wpdb;
-    if (!current_user_can('manage_options') && $wpdb->get_var("SELECT image_role FROM " . $wpdb->prefix . "bwg_option")) {
+    global $wd_bwg_options;
+    if (!current_user_can('manage_options') && $wd_bwg_options->image_role) {
       $where = " WHERE author=" . get_current_user_id();
     }
     else {
       $where = " WHERE author>=0 ";
     }
     $where .= ((isset($_POST['search_value'])) ? ' AND filename LIKE "%' . esc_html(stripslashes($_POST['search_value'])) . '%"' : '');
-    $asc_or_desc = ((isset($_POST['asc_or_desc'])) ? esc_html(stripslashes($_POST['asc_or_desc'])) : 'asc');
-    $asc_or_desc = ($asc_or_desc != 'asc') ? 'desc' : 'asc';
-    $image_order_by = ' ORDER BY `' . ((isset($_POST['image_order_by']) && esc_html(stripslashes($_POST['image_order_by'])) != '') ? esc_html(stripslashes($_POST['image_order_by'])) : 'order') . '` ' . $asc_or_desc;
+    $image_asc_or_desc = ((isset($_POST['image_asc_or_desc'])) ? esc_html(stripslashes($_POST['image_asc_or_desc'])) : ((isset($_COOKIE['bwg_image_asc_or_desc'])) ? esc_html(stripslashes($_COOKIE['bwg_image_asc_or_desc'])) : 'asc'));
+    $image_asc_or_desc = ($image_asc_or_desc != 'asc') ? 'desc' : 'asc';
+    $image_order_by = ((isset($_POST['image_order_by']) && esc_html(stripslashes($_POST['image_order_by'])) != '') ? esc_html(stripslashes($_POST['image_order_by'])) : ((isset($_COOKIE['bwg_image_order_by']) && esc_html(stripslashes($_COOKIE['bwg_image_order_by'])) != '') ? esc_html(stripslashes($_COOKIE['bwg_image_order_by'])) : 'order'));
+    $order_by_arr = array('filename', 'alt', 'description', 'published');
+    $image_order_by = in_array($image_order_by, $order_by_arr) ? $image_order_by : 'order';
+    $image_order_by = ' ORDER BY `' . $image_order_by . '` ' . $image_asc_or_desc;
+
     if (isset($_POST['page_number']) && $_POST['page_number']) {
       $limit = ((int) $_POST['page_number'] - 1) * $this->per_page;
     }
     else {
       $limit = 0;
     }
-    $row = $wpdb->get_results("SELECT * FROM " . $wpdb->prefix . "bwg_image " . $where . " AND gallery_id='" . $gallery_id . "' " . $image_order_by . " LIMIT " . $limit . ",".$this->per_page);
+    $row = $wpdb->get_results("SELECT * FROM " . $wpdb->prefix . "bwg_image " . $where . " AND gallery_id='" . $gallery_id . "' " . $image_order_by . " LIMIT " . $limit . "," . $this->per_page);
     return $row;
   }
 
@@ -60,16 +65,18 @@ class BWGModelGalleries_bwg {
 
   public function get_rows_data() {
     global $wpdb;
-    if (!current_user_can('manage_options') && $wpdb->get_var("SELECT gallery_role FROM " . $wpdb->prefix . "bwg_option")) {
+    global $wd_bwg_options;
+    if (!current_user_can('manage_options') && $wd_bwg_options->gallery_role) {
       $where = " WHERE author=" . get_current_user_id();
     }
     else {
       $where = " WHERE author>=0 ";
     }
     $where .= ((isset($_POST['search_value'])) ? ' AND name LIKE "%' . esc_html(stripslashes($_POST['search_value'])) . '%"' : '');
-    $asc_or_desc = ((isset($_POST['asc_or_desc'])) ? esc_html(stripslashes($_POST['asc_or_desc'])) : 'asc');
-    $asc_or_desc = ($asc_or_desc != 'asc') ? 'desc' : 'asc';
-    $order_by = ' ORDER BY `' . ((isset($_POST['order_by']) && esc_html(stripslashes($_POST['order_by'])) != '') ? esc_html(stripslashes($_POST['order_by'])) : 'order') . '` ' . $asc_or_desc;
+    $asc_or_desc = ((isset($_POST['asc_or_desc']) && esc_html($_POST['asc_or_desc']) == 'desc') ? 'desc' : 'asc');
+    $order_by_arr = array('id', 'name', 'slug', 'order', 'author', 'published');
+    $order_by = ((isset($_POST['order_by']) && in_array(esc_html($_POST['order_by']), $order_by_arr)) ? esc_html($_POST['order_by']) : 'order');
+    $order_by = ' ORDER BY `' . $order_by . '` ' . $asc_or_desc;
     if (isset($_POST['page_number']) && $_POST['page_number']) {
       $limit = ((int) $_POST['page_number'] - 1) * $this->per_page;
     }
@@ -83,8 +90,9 @@ class BWGModelGalleries_bwg {
 
   public function get_row_data($id) {
     global $wpdb;
+    global $wd_bwg_options;
     if ($id != 0) {
-      if (!current_user_can('manage_options') && $wpdb->get_var("SELECT gallery_role FROM " . $wpdb->prefix . "bwg_option")) {
+      if (!current_user_can('manage_options') && $wd_bwg_options->gallery_role) {
         $where = " WHERE author=" . get_current_user_id();
       }
       else {
@@ -103,13 +111,18 @@ class BWGModelGalleries_bwg {
       $row->author = get_current_user_id();
       $row->images_count = 0;
       $row->published = 1;
+      $row->gallery_type = '';
+      $row->gallery_source = '';
+      $row->autogallery_image_number = 12;
+      $row->update_flag = '';
     }
     return $row;
   }
   
   public function page_nav() {
     global $wpdb;
-    if (!current_user_can('manage_options') && $wpdb->get_var("SELECT gallery_role FROM " . $wpdb->prefix . "bwg_option")) {
+    global $wd_bwg_options;
+    if (!current_user_can('manage_options') && $wd_bwg_options->gallery_role) {
       $where = " WHERE author=" . get_current_user_id();
     }
     else {
@@ -131,7 +144,8 @@ class BWGModelGalleries_bwg {
 
   public function image_page_nav($gallery_id) {
     global $wpdb;
-    if (!current_user_can('manage_options') && $wpdb->get_var("SELECT image_role FROM " . $wpdb->prefix . "bwg_option")) {
+    global $wd_bwg_options;
+    if (!current_user_can('manage_options') && $wd_bwg_options->image_role) {
       $where = " AND author=" . get_current_user_id();
     }
     else {
@@ -151,15 +165,10 @@ class BWGModelGalleries_bwg {
     return $page_nav;
   }
 
-  public function get_option_row_data() {
-    global $wpdb;
-    $row = $wpdb->get_row($wpdb->prepare('SELECT * FROM ' . $wpdb->prefix . 'bwg_option WHERE id="%d"', 1));
-    return $row;
-  }
-
 	public function get_images_count($gallery_id) {
     global $wpdb;
-		if (!current_user_can('manage_options') && $wpdb->get_var("SELECT image_role FROM " . $wpdb->prefix . "bwg_option")) {
+    global $wd_bwg_options;
+		if (!current_user_can('manage_options') && $wd_bwg_options->image_role) {
       $where = " WHERE author=" . get_current_user_id();
     }
     else {

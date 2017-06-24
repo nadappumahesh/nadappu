@@ -22,20 +22,19 @@ class BWGViewGalleryBox {
   ////////////////////////////////////////////////////////////////////////////////////////
   public function display() {
     global $WD_BWG_UPLOAD_DIR;
-    global $wp;
-    $current_url = (isset($_GET['current_url']) ? add_query_arg(esc_html($_GET['current_url']), '', home_url($wp->request)) : '');
-    $tag_id = (isset($_GET['tag_id']) ? esc_html($_GET['tag_id']) : 0);
-    $gallery_id = (isset($_GET['gallery_id']) ? esc_html($_GET['gallery_id']) : 0);
+    require_once(WD_BWG_DIR . '/framework/WDWLibraryEmbed.php');
+    $tag = (isset($_GET['tags']) ? esc_html($_GET['tags']) : 0);
+    $gallery_id = WDWLibrary::esc_script('get', 'gallery_id', 0, 'int');
     $bwg = (isset($_GET['current_view']) ? esc_html($_GET['current_view']) : 0);
-    $current_image_id = (isset($_GET['image_id']) ? esc_html($_GET['image_id']) : 0);
+    $current_image_id = WDWLibrary::esc_script('get', 'image_id', 0, 'int');
     $theme_id = (isset($_GET['theme_id']) ? esc_html($_GET['theme_id']) : 1);
     $thumb_width = (isset($_GET['thumb_width']) ? esc_html($_GET['thumb_width']) : 120);
     $thumb_height = (isset($_GET['thumb_height']) ? esc_html($_GET['thumb_height']) : 90);
-    $open_with_fullscreen = (isset($_GET['open_with_fullscreen']) ? esc_html($_GET['open_with_fullscreen']) : 0);
-    $open_with_autoplay = (isset($_GET['open_with_autoplay']) ? esc_html($_GET['open_with_autoplay']) : 0);
-    $image_width = (isset($_GET['image_width']) ? esc_html($_GET['image_width']) : 800);
-    $image_height = (isset($_GET['image_height']) ? esc_html($_GET['image_height']) : 500);
-    $image_effect = ((isset($_GET['image_effect']) && esc_html($_GET['image_effect'])) ? esc_html($_GET['image_effect']) : 'fade');
+    $open_with_fullscreen = WDWLibrary::esc_script('get', 'open_with_fullscreen', 0, 'int');
+    $open_with_autoplay = WDWLibrary::esc_script('get', 'open_with_autoplay', 0, 'int');
+    $image_width = WDWLibrary::esc_script('get', 'image_width', 800, 'int');
+    $image_height = WDWLibrary::esc_script('get', 'image_height', 500, 'int');
+    $image_effect = WDWLibrary::esc_script('get', 'image_effect', 'fade');
     $sort_by = (isset($_GET['wd_sor']) ? esc_html($_GET['wd_sor']) : 'order');
     $order_by = (isset($_GET['wd_ord']) ? esc_html($_GET['wd_ord']) : 'asc');
     $enable_image_filmstrip = FALSE;
@@ -43,19 +42,9 @@ class BWGViewGalleryBox {
     $popup_enable_info = (isset($_GET['popup_enable_info']) ? esc_html($_GET['popup_enable_info']) : 1);
     $popup_info_always_show = (isset($_GET['popup_info_always_show']) ? esc_html($_GET['popup_info_always_show']) : 0);
     $popup_info_full_width = (isset($_GET['popup_info_full_width']) ? esc_html($_GET['popup_info_full_width']) : 0);
-    $popup_enable_rate = (isset($_GET['popup_enable_rate']) ? esc_html($_GET['popup_enable_rate']) : 0);
+    $popup_enable_rate = WDWLibrary::esc_script('get', 'popup_enable_rate', 0, 'int');
     $popup_hit_counter = (isset($_GET['popup_hit_counter']) ? esc_html($_GET['popup_hit_counter']) : 0);
-
-    if ($enable_image_filmstrip) {
-      $image_filmstrip_height = (isset($_GET['image_filmstrip_height']) ? esc_html($_GET['image_filmstrip_height']) : '20');
-      $thumb_ratio = $thumb_width / $thumb_height;
-      $image_filmstrip_width = round($thumb_ratio * $image_filmstrip_height);
-    }
-    else {
-      $image_filmstrip_height = 0;
-      $image_filmstrip_width = 0;
-    }
-
+    $slideshow_effect_duration = (isset($_GET['slideshow_effect_duration']) ? floatval($_GET['slideshow_effect_duration']) : 1);
     $slideshow_interval = (isset($_GET['slideshow_interval']) ? (int) $_GET['slideshow_interval'] : 5);
     $enable_image_ctrl_btn = (isset($_GET['enable_image_ctrl_btn']) ? esc_html($_GET['enable_image_ctrl_btn']) : 0);
     $enable_comment_social = FALSE;
@@ -77,68 +66,14 @@ class BWGViewGalleryBox {
     $watermark_width = (isset($_GET['watermark_width']) ? esc_html($_GET['watermark_width']) : 90);
     $watermark_height = (isset($_GET['watermark_height']) ? esc_html($_GET['watermark_height']) : 90);
 
-    $theme_row = $this->model->get_theme_row_data($theme_id);
-    $option_row = $this->model->get_option_row_data();
-    $image_right_click = $option_row->image_right_click;
+    $theme_row = WDWLibrary::get_theme_row_data($theme_id);
+    global $wd_bwg_options;
+    $image_right_click = $wd_bwg_options->image_right_click;
+    $image_filmstrip_height = 0;
+    $image_filmstrip_width = 0;	
 
-    if ($tag_id != 0) {
-      $image_rows = $this->model->get_image_rows_data_tag($tag_id, $sort_by, $order_by);
-    }
-    else {
-      $image_rows = $this->model->get_image_rows_data($gallery_id, $sort_by, $order_by);
-    }
+    $image_rows = $this->model->get_image_rows_data($gallery_id, $bwg, $sort_by, $order_by, $tag);
     $image_id = (isset($_POST['image_id']) ? (int) $_POST['image_id'] : $current_image_id);
-    $comment_rows = $this->model->get_comment_rows_data($image_id);
-
-    $params_array = array(
-      'action' => 'GalleryBox',
-      'image_id' => $current_image_id,
-      'gallery_id' => $gallery_id,
-      'theme_id' => $theme_id,
-      'thumb_width' => $thumb_width,
-      'thumb_height' => $thumb_height,
-      'open_with_fullscreen' => $open_with_fullscreen,
-      'image_width' => $image_width,
-      'image_height' => $image_height,
-      'image_effect' => $image_effect,
-      'wd_sor' => $sort_by,
-      'wd_ord' => $order_by,
-      'enable_image_filmstrip' => $enable_image_filmstrip,
-      'image_filmstrip_height' => $image_filmstrip_height,
-      'enable_image_ctrl_btn' => $enable_image_ctrl_btn,
-      'enable_image_fullscreen' => $enable_image_fullscreen,
-      'popup_enable_info' => $popup_enable_info,
-      'popup_info_always_show' => $popup_info_always_show,
-      'popup_info_full_width' => $popup_info_full_width,
-      'popup_hit_counter' => $popup_hit_counter,
-      'popup_enable_rate' => $popup_enable_rate,
-      'slideshow_interval' => $slideshow_interval,
-      'enable_comment_social' => $enable_comment_social,
-      'enable_image_facebook' => $enable_image_facebook,
-      'enable_image_twitter' => $enable_image_twitter,
-      'enable_image_google' => $enable_image_google,
-      'enable_image_pinterest' => $enable_image_pinterest,
-      'enable_image_tumblr' => $enable_image_tumblr,
-      'watermark_type' => $watermark_type,
-      'current_url' => $current_url
-    );
-    if ($watermark_type != 'none') {
-      $params_array['watermark_link'] = $watermark_link;
-      $params_array['watermark_opacity'] = $watermark_opacity;
-      $params_array['watermark_position'] = $watermark_position;
-    }
-    if ($watermark_type == 'text') {
-      $params_array['watermark_text'] = $watermark_text;
-      $params_array['watermark_font_size'] = $watermark_font_size;
-      $params_array['watermark_font'] = $watermark_font;
-      $params_array['watermark_color'] = $watermark_color;
-    }
-    elseif ($watermark_type == 'image') {
-      $params_array['watermark_url'] = $watermark_url;
-      $params_array['watermark_width'] = $watermark_width;
-      $params_array['watermark_height'] = $watermark_height;
-    }
-    $popup_url = add_query_arg(array($params_array), admin_url('admin-ajax.php'));
     $filmstrip_thumb_margin = $theme_row->lightbox_filmstrip_thumb_margin;
     $margins_split = explode(" ", $filmstrip_thumb_margin);
     $filmstrip_thumb_margin_right = 0;
@@ -160,6 +95,11 @@ class BWGViewGalleryBox {
     $rgb_bwg_image_info_bg_color = WDWLibrary::spider_hex2rgb($theme_row->lightbox_info_bg_color);
     $rgb_bwg_image_hit_bg_color = WDWLibrary::spider_hex2rgb($theme_row->lightbox_hit_bg_color);
     $rgb_lightbox_ctrl_cont_bg_color = WDWLibrary::spider_hex2rgb($theme_row->lightbox_ctrl_cont_bg_color);
+    $lightbox_bg_transparent = (isset($theme_row->lightbox_bg_transparent)) ? $theme_row->lightbox_bg_transparent : 100;
+    $lightbox_bg_color = WDWLibrary::spider_hex2rgb($theme_row->lightbox_bg_color); 
+
+    $current_filename = '';
+
     ?>
     <style>
       .spider_popup_wrap * {
@@ -168,7 +108,7 @@ class BWGViewGalleryBox {
         box-sizing: border-box;
       }
       .spider_popup_wrap {
-        background-color: #<?php echo $theme_row->lightbox_bg_color; ?>;
+        background-color: rgba(<?php echo $lightbox_bg_color['red']; ?>, <?php echo $lightbox_bg_color['green']; ?>, <?php echo $lightbox_bg_color['blue']; ?>, <?php echo number_format($lightbox_bg_transparent/ 100, 2, ".", ""); ?>);
         display: inline-block;
         left: 50%;
         outline: medium none;
@@ -183,10 +123,11 @@ class BWGViewGalleryBox {
         vertical-align: middle;
         display: inline-block;
       }
-      .bwg_popup_video {
+      .bwg_popup_embed {
         width: <?php echo $image_width; ?>px;
         height: <?php echo $image_height - $image_filmstrip_height; ?>px;
         vertical-align: middle;
+        text-align: center;
         display: inline-block;
       }
       .bwg_ctrl_btn {
@@ -242,14 +183,14 @@ class BWGViewGalleryBox {
           ?>
           border-bottom-left-radius: <?php echo $theme_row->lightbox_ctrl_cont_border_radius; ?>px;
           border-bottom-right-radius: <?php echo $theme_row->lightbox_ctrl_cont_border_radius; ?>px;
-          top: <?php echo $theme_row->lightbox_ctrl_btn_height + 2 * $theme_row->lightbox_ctrl_btn_margin_top; ?>px;
+          /*top: <?php echo $theme_row->lightbox_ctrl_btn_height + 2 * $theme_row->lightbox_ctrl_btn_margin_top; ?>px;*/
           <?php
         }
         else {
           ?>
           border-top-left-radius: <?php echo $theme_row->lightbox_ctrl_cont_border_radius; ?>px;
           border-top-right-radius: <?php echo $theme_row->lightbox_ctrl_cont_border_radius; ?>px;
-          bottom: <?php echo $theme_row->lightbox_ctrl_btn_height + 2 * $theme_row->lightbox_ctrl_btn_margin_top; ?>px;
+          /*bottom: <?php echo $theme_row->lightbox_ctrl_btn_height + 2 * $theme_row->lightbox_ctrl_btn_margin_top; ?>px;*/
           <?php
         }?>
         cursor: pointer;
@@ -304,6 +245,24 @@ class BWGViewGalleryBox {
         opacity: <?php echo number_format($theme_row->lightbox_rl_btn_transparent / 100, 2, ".", ""); ?>;
         filter: Alpha(opacity=<?php echo $theme_row->lightbox_rl_btn_transparent; ?>);
       }
+      <?php
+      if($wd_bwg_options->autohide_lightbox_navigation){?>
+      #spider_popup_left-ico{
+        left: -9999px;
+      }
+      #spider_popup_right-ico{
+        left: -9999px;
+      }      
+      <?php }
+      else { ?>
+        #spider_popup_left-ico {
+        left: 20px;
+        }
+        #spider_popup_right-ico {
+          left: auto;
+          right: 20px;
+        }
+      <?php } ?>
       .bwg_ctrl_btn:hover,
       .bwg_toggle_btn:hover,
       .spider_popup_close:hover,
@@ -476,7 +435,7 @@ class BWGViewGalleryBox {
         height: <?php echo $image_filmstrip_height; ?>px;
         position: absolute;
         width: <?php echo $image_width; ?>px;
-        z-index: 10105;
+        z-index: 10150;
         <?php echo $theme_row->lightbox_filmstrip_pos; ?>: 0;
       }
       .bwg_filmstrip {
@@ -590,8 +549,8 @@ class BWGViewGalleryBox {
         display: table-cell;
         position: absolute;
         vertical-align: middle;
-        width: inherit;
-        height: inherit;
+        width: 100%;
+        height: 100%;
       }
       .bwg_slide_bg {
         margin: 0 auto;
@@ -669,9 +628,10 @@ class BWGViewGalleryBox {
         border: <?php echo $theme_row->lightbox_info_border_width; ?>px <?php echo $theme_row->lightbox_info_border_style; ?> #<?php echo $theme_row->lightbox_info_border_color; ?>;
         border-radius: <?php echo $theme_row->lightbox_info_border_radius; ?>;
         <?php echo ((!$enable_image_filmstrip || $theme_row->lightbox_filmstrip_pos != 'bottom') && $theme_row->lightbox_ctrl_btn_pos == 'bottom' && $theme_row->lightbox_info_pos == 'bottom') ? 'bottom: ' . ($theme_row->lightbox_ctrl_btn_height + 2 * $theme_row->lightbox_ctrl_btn_margin_top) . 'px;' : '' ?>
-        <?php if($params_array['popup_info_full_width']) { ?>
+        <?php if ($popup_info_full_width) { ?>
         width: 100%;
         <?php } else { ?>
+        width: 33%;
         margin: <?php echo $theme_row->lightbox_info_margin; ?>;
         <?php } ?>
         padding: <?php echo $theme_row->lightbox_info_padding; ?>;
@@ -762,14 +722,25 @@ class BWGViewGalleryBox {
           $current_image_url = $image_row->image_url;
           $current_thumb_url = $image_row->thumb_url;
           $current_filetype = $image_row->filetype;
+          $current_filename = $image_row->filename;
           $image_id_exist = TRUE;
         }
         ?>
         data["<?php echo $key; ?>"] = [];
         data["<?php echo $key; ?>"]["number"] = <?php echo $key + 1; ?>;
         data["<?php echo $key; ?>"]["id"] = "<?php echo $image_row->id; ?>";
-        data["<?php echo $key; ?>"]["alt"] = "<?php echo $image_row->alt; ?>";
-        data["<?php echo $key; ?>"]["description"] = "<?php echo str_replace(array("\r\n", "\n", "\r"), esc_html('<br />'), $image_row->description); ?>";
+        data["<?php echo $key; ?>"]["alt"] = "<?php echo addslashes(str_replace(array("\r\n", "\n", "\r"), esc_html('<br />'), $image_row->alt)); ?>";
+        data["<?php echo $key; ?>"]["description"] = "<?php echo addslashes(str_replace(array("\r\n", "\n", "\r"), esc_html('<br />'), $image_row->description)); ?>";
+        <?php
+        $image_resolution = explode(' x ', $image_row->resolution);
+        if (is_array($image_resolution)) {
+          $instagram_post_width = $image_resolution[0];
+          $instagram_post_height = explode(' ', $image_resolution[1]);
+          $instagram_post_height = $instagram_post_height[0];
+        }
+        ?>
+        data["<?php echo $key; ?>"]["image_width"] = "<?php echo $instagram_post_width; ?>";
+        data["<?php echo $key; ?>"]["image_height"] = "<?php echo $instagram_post_height; ?>";
         data["<?php echo $key; ?>"]["image_url"] = "<?php echo $image_row->image_url; ?>";
         data["<?php echo $key; ?>"]["thumb_url"] = "<?php echo $image_row->thumb_url; ?>";
         data["<?php echo $key; ?>"]["date"] = "<?php echo $image_row->date; ?>";
@@ -786,7 +757,7 @@ class BWGViewGalleryBox {
     </script>
     <?php
     if (!$image_id_exist) {
-      echo WDWLibrary::message(__('The image has been deleted.', 'bwg'), 'error');
+      echo WDWLibrary::message(__('The image has been deleted.', 'bwg'), 'wd_error');
       die();
     }
     ?>
@@ -797,7 +768,7 @@ class BWGViewGalleryBox {
       <div class="bwg_btn_container">
         <div class="bwg_ctrl_btn_container">
 					<?php
-          if ($option_row->show_image_counts) {
+          if ($wd_bwg_options->show_image_counts) {
             ?>
             <span class="bwg_image_count_container bwg_ctrl_btn">
               <span class="bwg_image_count"><?php echo $current_image_key + 1; ?></span> / 
@@ -818,17 +789,31 @@ class BWGViewGalleryBox {
           <?php } if ($popup_enable_info) { ?>
           <i title="<?php echo __('Show info', 'bwg'); ?>" class="bwg_ctrl_btn bwg_info fa fa-info"></i>
           <?php }
-          if ($option_row->popup_enable_fullsize_image) {
+          $is_embed = preg_match('/EMBED/', $current_filetype) == 1 ? TRUE : FALSE;
+          if ($wd_bwg_options->popup_enable_fullsize_image) {
             ?>
-            <a id="bwg_fullsize_image" href="<?php echo site_url() . '/' . $WD_BWG_UPLOAD_DIR . $current_image_url; ?>" target="_blank">
+            <a id="bwg_fullsize_image" href="<?php echo !$is_embed ? site_url() . '/' . $WD_BWG_UPLOAD_DIR . $current_image_url : $current_image_url; ?>" target="_blank">
               <i title="<?php echo __('Open image in original size.', 'bwg'); ?>" class="bwg_ctrl_btn fa fa-external-link"></i>
             </a>
             <?php
           }
-          if ($option_row->popup_enable_download) {
+          if ($wd_bwg_options->popup_enable_download) {
+            $style = 'none';
             $current_image_arr = explode('/', $current_image_url);
+            if (!$is_embed) {
+              $download_href = site_url() . '/' . $WD_BWG_UPLOAD_DIR . str_replace('/thumb/', '/.original/', $current_thumb_url);
+              $style = 'inline-block';
+            }
+            elseif (preg_match('/FLICKR/', $current_filetype) == 1) {
+              $download_href = $current_filename;
+              $style = 'inline-block';
+            }
+            elseif (preg_match('/INSTAGRAM/', $current_filetype) == 1) {
+              $download_href = substr_replace($current_thumb_url, 'l', -1);
+              $style = 'inline-block';
+            }
             ?>
-            <a id="bwg_download" href="<?php echo site_url() . '/' . $WD_BWG_UPLOAD_DIR . $current_image_url; ?>" target="_blank" download="<?php echo end($current_image_arr); ?>">
+            <a id="bwg_download" href="<?php echo $download_href; ?>" target="_blank" download="<?php echo end($current_image_arr); ?>" style="display: <?php echo $style; ?>;">
               <i title="<?php echo __('Download original image', 'bwg'); ?>" class="bwg_ctrl_btn fa fa-download"></i>
             </a>
             <?php
@@ -860,7 +845,7 @@ class BWGViewGalleryBox {
               }
               elseif ($watermark_type == 'text') {
               ?>
-              <a class="bwg_none_selectable bwg_watermark_text bwg_watermark" target="_blank" href="<?php echo $watermark_link; ?>"><?php echo $watermark_text; ?></a>
+              <a class="bwg_none_selectable bwg_watermark_text bwg_watermark" target="_blank" href="<?php echo $watermark_link; ?>"><?php echo stripslashes($watermark_text); ?></a>
               <?php
               }
               ?>
@@ -875,7 +860,7 @@ class BWGViewGalleryBox {
         <div class="bwg_image_info_container1">
           <div class="bwg_image_info_container2">
             <span class="bwg_image_info_spun">
-              <div class="bwg_image_info">
+              <div class="bwg_image_info" <?php if(trim($current_image_alt) == '' && trim($current_image_description) == '') { echo 'style="background:none;"'; } ?>>
                 <div class="bwg_image_title"><?php echo html_entity_decode($current_image_alt); ?></div>
                 <div class="bwg_image_description"><?php echo html_entity_decode($current_image_description); ?></div>
               </div>
@@ -888,7 +873,8 @@ class BWGViewGalleryBox {
           <?php
           $current_key = -6;
           foreach ($image_rows as $key => $image_row) {
-            $is_video = $image_row->filetype == "YOUTUBE" || $image_row->filetype == "VIMEO";
+            $is_embed = preg_match('/EMBED/',$image_row->filetype)==1 ? true :false;
+            $is_embed_instagram_post = preg_match('/INSTAGRAM_POST/',$image_row->filetype)==1 ? true :false;
             if ($image_row->id == $current_image_id) {
               $current_key = $key;
               ?>
@@ -896,15 +882,40 @@ class BWGViewGalleryBox {
                 <span class="bwg_popup_image_spun1" style="display: table; width: inherit; height: inherit;">
                   <span class="bwg_popup_image_spun2" style="display: table-cell; vertical-align: middle; text-align: center;">
                     <?php 
-                      if (!$is_video) {
+                      if (!$is_embed) {
                       ?>
-                      <img class="bwg_popup_image" src="<?php echo site_url() . '/' . $WD_BWG_UPLOAD_DIR . $image_row->image_url; ?>" alt="<?php echo $image_row->alt; ?>" />
+                      <img class="bwg_popup_image bwg_popup_watermark" src="<?php echo site_url() . '/' . $WD_BWG_UPLOAD_DIR . $image_row->image_url; ?>" alt="<?php echo $image_row->alt; ?>" />
                       <?php 
                       }
-                      else { ?>
-                        <span class="bwg_popup_video">
-                          <iframe class="bwg_video_frame" src="<?php echo ($image_row->filetype == "YOUTUBE" ? "//www.youtube.com/embed/" . $image_row->filename . "?enablejsapi=1" : "//player.vimeo.com/video/" . $image_row->filename . "?api=1"); ?>" frameborder="0" allowfullscreen style="width:100%; height:100%;"></iframe>
-                        </span>
+                      else { /*$is_embed*/ ?>
+                        <span class="bwg_popup_embed bwg_popup_watermark" style="diplay: table; table-layout: fixed;">
+                        <?php
+                        if ($is_embed_instagram_post) {
+                          $post_width = $image_width;
+                          $post_height = $image_height;
+                          if ($post_height < $post_width + 88) {
+                            $post_width = $post_height - 88;
+                          }
+                          else {
+                           $post_height = $post_width + 88;
+                          }
+
+                          $instagram_post_width = $post_width;
+                          $instagram_post_height = $post_height;
+                          $image_resolution = explode(' x ', $image_row->resolution);
+                          if (is_array($image_resolution)) {
+                            $instagram_post_width = $image_resolution[0];
+                            $instagram_post_height = explode(' ', $image_resolution[1]);
+                            $instagram_post_height = $instagram_post_height[0];
+                          }
+                          
+                          WDWLibraryEmbed::display_embed($image_row->filetype, $image_row->filename, array('class' => "bwg_embed_frame", 'data-width' => $instagram_post_width, 'data-height' => $instagram_post_height, 'frameborder' => "0", 'style' => "width:" . $post_width . "px; height:" . $post_height . "px; vertical-align:middle; display:inline-block; position:relative;"));
+                        }
+                        else{
+                        WDWLibraryEmbed::display_embed($image_row->filetype, $image_row->filename, array('class'=>"bwg_embed_frame", 'frameborder'=>"0", 'allowfullscreen'=>"allowfullscreen", 'style'=>"width:inherit; height:inherit; vertical-align:middle; display:table-cell;"));
+                        }
+                        ?>
+                      </span>
                       <?php
                       }
                     ?>                    
@@ -922,15 +933,15 @@ class BWGViewGalleryBox {
             </div>
           </div>
         </div>
-        <a id="spider_popup_left"><span id="spider_popup_left-ico"><span><i class="bwg_prev_btn fa <?php echo $theme_row->lightbox_rl_btn_style; ?>-left"></i></span></span></a>
-        <a id="spider_popup_right"><span id="spider_popup_right-ico"><span><i class="bwg_next_btn fa <?php echo $theme_row->lightbox_rl_btn_style; ?>-right"></i></span></span></a>
+        <a id="spider_popup_left" <?php echo ($wd_bwg_options->enable_loop == 0 && $current_key == 0) ? 'style="display: none;"' : ''; ?>><span id="spider_popup_left-ico"><span><i class="bwg_prev_btn fa <?php echo $theme_row->lightbox_rl_btn_style; ?>-left"></i></span></span></a>
+        <a id="spider_popup_right" <?php echo ($wd_bwg_options->enable_loop == 0 && $current_key == count($image_rows) - 1) ? 'style="display: none;"' : ''; ?>><span id="spider_popup_right-ico"><span><i class="bwg_next_btn fa <?php echo $theme_row->lightbox_rl_btn_style; ?>-right"></i></span></span></a>
       </div>
     </div>
     <a class="spider_popup_close" onclick="spider_destroypopup(1000); return false;" ontouchend="spider_destroypopup(1000); return false;"><span><i class="bwg_close_btn fa fa-times"></i></span></a>
-
+    <script language="javascript" type="text/javascript" src="<?php echo WD_BWG_URL . '/js/bwg_embed.js?ver='.wd_bwg_version(); ?>"></script>
     <script>
       var bwg_trans_in_progress = false;
-      var bwg_transition_duration = <?php echo (($slideshow_interval < 4) && ($slideshow_interval != 0)) ? ($slideshow_interval * 1000) / 4 : 800; ?>;
+      var bwg_transition_duration = <?php echo (($slideshow_interval < 4) && ($slideshow_interval != 0)) ? ($slideshow_interval * 1000) / 4 : ($slideshow_effect_duration * 1000); ?>;
       var bwg_playInterval;
       if ((jQuery("#spider_popup_wrap").width() >= jQuery(window).width()) || (jQuery("#spider_popup_wrap").height() >= jQuery(window).height())) {
         jQuery(".spider_popup_close").attr("class", "bwg_ctrl_btn spider_popup_close_fullscreen");
@@ -941,28 +952,37 @@ class BWGViewGalleryBox {
       function bwg_change_watermark_container() {
         jQuery(".bwg_slider").children().each(function() {
           if (jQuery(this).css("zIndex") == 2) {
+            /* This may be neither img nor iframe.*/
             var bwg_current_image_span = jQuery(this).find("img");
             if (!bwg_current_image_span.length) {
               bwg_current_image_span = jQuery(this).find("iframe");
             }
-            var width = bwg_current_image_span.width();
-            var height = bwg_current_image_span.height();
-            jQuery(".bwg_watermark_spun").width(width);
-            jQuery(".bwg_watermark_spun").height(height);
-            jQuery(".bwg_watermark").css({display: ''});
-            /* Set watermark image size.*/
-            var comment_container_width = 0;
-            if (jQuery(".bwg_comment_container").hasClass("bwg_open")) {
-              comment_container_width = <?php echo $theme_row->lightbox_comment_width; ?>;
+            if (!bwg_current_image_span.length) {
+              bwg_current_image_span = jQuery(this).find("video");
             }
-            if (width <= (jQuery(window).width() - comment_container_width)) {
-              jQuery(".bwg_watermark_image").css({
-                width: ((jQuery(".spider_popup_wrap").width() - comment_container_width) * <?php echo $watermark_width / $image_width; ?>)
-              });
-              jQuery(".bwg_watermark_text, .bwg_watermark_text:hover").css({
-                fontSize: ((jQuery(".spider_popup_wrap").width() - comment_container_width) * <?php echo $watermark_font_size / $image_width; ?>)
-              });
-            }
+            /*set timeout for video to get size according to style, and then put watermark*/
+            setTimeout(function () {
+              var width = bwg_current_image_span.width();
+              var height = bwg_current_image_span.height();
+          
+
+              jQuery(".bwg_watermark_spun").width(width);
+              jQuery(".bwg_watermark_spun").height(height);
+              jQuery(".bwg_watermark").css({display: ''});
+              /* Set watermark image size.*/
+              var comment_container_width = 0;
+              if (jQuery(".bwg_comment_container").hasClass("bwg_open")) {
+                comment_container_width = <?php echo $theme_row->lightbox_comment_width; ?>;
+               }
+              if (width <= (jQuery(window).width() - comment_container_width)) {
+                jQuery(".bwg_watermark_image").css({
+                  width: ((jQuery(".spider_popup_wrap").width() - comment_container_width) * <?php echo $watermark_width / $image_width; ?>)
+                });
+                jQuery(".bwg_watermark_text, .bwg_watermark_text:hover").css({
+                  fontSize: ((jQuery(".spider_popup_wrap").width() - comment_container_width) * <?php echo $watermark_font_size / $image_width; ?>)
+                });
+              }
+            }, 800);
           }
         });
       }
@@ -1078,14 +1098,20 @@ class BWGViewGalleryBox {
           jQuery(".bwg_slider").removeAttr('style');
           jQuery(current_image_class).css({'opacity' : 0, filter: 'Alpha(opacity=0)', 'z-index': 1});
           jQuery(next_image_class).css({'opacity' : 1, filter: 'Alpha(opacity=100)', 'z-index' : 2});
-          
+          jQuery(".bwg_image_info").show();
           bwg_trans_in_progress = false;
-          if (typeof event_stack !== 'undefined' && event_stack.length > 0) {
-            key = event_stack[0].split("-");
-            event_stack.shift();
-            bwg_change_image(key[0], key[1], data, true);
+          jQuery(current_image_class).html('');
+          if (typeof event_stack !== 'undefined') {
+            if (event_stack.length > 0) {
+              key = event_stack[0].split("-");
+              event_stack.shift();
+              bwg_change_image(key[0], key[1], data, true);
+            }
           }
           bwg_change_watermark_container();
+        }
+        if (bwg_transition_duration == 0) {
+          bwg_after_trans();
         }
       }
       function bwg_cubeH(current_image_class, next_image_class, direction) {
@@ -1109,20 +1135,27 @@ class BWGViewGalleryBox {
       function bwg_none(current_image_class, next_image_class, direction) {
         jQuery(current_image_class).css({'opacity' : 0, 'z-index': 1});
         jQuery(next_image_class).css({'opacity' : 1, 'z-index' : 2});
+        jQuery(".bwg_image_info").show();
         /* Set active thumbnail.*/
         jQuery(".bwg_filmstrip_thumbnail").removeClass("bwg_thumb_active").addClass("bwg_thumb_deactive");
         jQuery("#bwg_filmstrip_thumbnail_" + bwg_current_key).removeClass("bwg_thumb_deactive").addClass("bwg_thumb_active");
+        bwg_trans_in_progress = false; 
+        jQuery(current_image_class).html('');
         bwg_change_watermark_container();
       }
       function bwg_fade(current_image_class, next_image_class, direction) {
         /* Set active thumbnail.*/
         jQuery(".bwg_filmstrip_thumbnail").removeClass("bwg_thumb_active").addClass("bwg_thumb_deactive");
         jQuery("#bwg_filmstrip_thumbnail_" + bwg_current_key).removeClass("bwg_thumb_deactive").addClass("bwg_thumb_active");
+        function bwg_after_trans() {
+          jQuery(".bwg_image_info").show();
+          bwg_change_watermark_container();
+        }
         if (bwg_testBrowser_cssTransitions()) {
           jQuery(next_image_class).css('transition', 'opacity ' + bwg_transition_duration + 'ms linear');
           jQuery(current_image_class).css({'opacity' : 0, 'z-index': 1});
           jQuery(next_image_class).css({'opacity' : 1, 'z-index' : 2});
-          bwg_change_watermark_container();
+          jQuery(next_image_class).one('webkitTransitionEnd transitionend otransitionend oTransitionEnd mstransitionend', jQuery.proxy(bwg_after_trans));
         }
         else {
           jQuery(current_image_class).animate({'opacity' : 0, 'z-index' : 1}, bwg_transition_duration);
@@ -1131,11 +1164,19 @@ class BWGViewGalleryBox {
               'z-index': 2
             }, {
               duration: bwg_transition_duration,
-              complete: function () { bwg_change_watermark_container(); }
+              complete: function () { 
+
+                bwg_trans_in_progress = false;  
+                jQuery(current_image_class).html('');
+                jQuery(".bwg_image_info").show();
+                bwg_change_watermark_container(); }
             });
           /* For IE.*/
           jQuery(current_image_class).fadeTo(bwg_transition_duration, 0);
           jQuery(next_image_class).fadeTo(bwg_transition_duration, 1);
+        }
+        if (bwg_transition_duration == 0) {
+          bwg_after_trans();
         }
       }
       function bwg_grid(cols, rows, ro, tx, ty, sc, op, current_image_class, next_image_class, direction) {
@@ -1153,7 +1194,8 @@ class BWGViewGalleryBox {
         function bwg_gridlet(width, height, top, img_top, left, img_left, src, imgWidth, imgHeight, c, r) {
           var delay = (c + r) * count;
           /* Return a gridlet elem with styles for specific transition.*/
-          return jQuery('<div class="bwg_gridlet" />').css({
+          return jQuery('<span class="bwg_gridlet" />').css({
+            display : "block",
             width : width,
             height : height,
             top : top,
@@ -1171,7 +1213,7 @@ class BWGViewGalleryBox {
         /* Get the current slide's image.*/
         var cur_img = jQuery(current_image_class).find('img');
         /* Create a grid to hold the gridlets.*/
-        var grid = jQuery('<div />').addClass('bwg_grid');
+        var grid = jQuery('<span style="display: block;" />').addClass('bwg_grid');
         /* Prepend the grid to the next slide (i.e. so it's above the slide image).*/
         jQuery(current_image_class).prepend(grid);
         /* Vars to calculate positioning/size of gridlets.*/
@@ -1180,7 +1222,6 @@ class BWGViewGalleryBox {
         var imgHeight = cur_img.height();
         var contWidth = cont.width(),
             contHeight = cont.height(),
-            imgSrc = cur_img.attr('src'),/*.replace('/thumb', ''),*/
             colWidth = Math.floor(contWidth / cols),
             rowHeight = Math.floor(contHeight / rows),
             colRemainder = contWidth - (cols * colWidth),
@@ -1189,6 +1230,7 @@ class BWGViewGalleryBox {
             rowAdd = Math.ceil(rowRemainder / rows),
             leftDist = 0,
             img_leftDist = Math.ceil((jQuery(".bwg_slide_bg").width() - cur_img.width()) / 2);
+	      var imgSrc = typeof cur_img.attr('src')=='undefined' ? '' :cur_img.attr('src');
         /* tx/ty args can be passed as 'auto'/'min-auto' (meaning use slide width/height or negative slide width/height).*/
         tx = tx === 'auto' ? contWidth : tx;
         tx = tx === 'min-auto' ? - contWidth : tx;
@@ -1249,12 +1291,19 @@ class BWGViewGalleryBox {
           cur_img.css('opacity', 1);
           grid.remove();
           bwg_trans_in_progress = false;
-          if (typeof event_stack !== 'undefined' && event_stack.length > 0) {
-            key = event_stack[0].split("-");
-            event_stack.shift();
-            bwg_change_image(key[0], key[1], data, true);
+          jQuery(".bwg_image_info").show();
+          jQuery(current_image_class).html('');
+          if (typeof event_stack !== 'undefined') {
+            if (event_stack.length > 0) {
+              key = event_stack[0].split("-");
+              event_stack.shift();
+              bwg_change_image(key[0], key[1], data, true);
+            }
           }
           bwg_change_watermark_container();
+        }
+        if (bwg_transition_duration == 0) {
+          bwg_after_trans();
         }
       }
       function bwg_sliceV(current_image_class, next_image_class, direction) {
@@ -1273,77 +1322,130 @@ class BWGViewGalleryBox {
         bwg_grid(10, 1, 0, 0, 0, .7, 0, current_image_class, next_image_class);
       }
       function bwg_change_image(current_key, key, data, from_effect) {
+        jQuery("#spider_popup_left").show();
+        jQuery("#spider_popup_right").show();
+        jQuery(".bwg_image_info").hide();
+        if (<?php echo $wd_bwg_options->enable_loop; ?> == 0) {
+          if (key == (parseInt(data.length) - 1)) {
+            jQuery("#spider_popup_right").hide();
+          }
+          if (key == 0) {
+            jQuery("#spider_popup_left").hide();
+          }
+        }
         /* Pause videos.*/
         jQuery("#bwg_image_container").find("iframe").each(function () {
           jQuery(this)[0].contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
           jQuery(this)[0].contentWindow.postMessage('{ "method": "pause" }', "*");
+          jQuery(this)[0].contentWindow.postMessage('pause', '*');
         });
-        if (typeof data[key] != 'undefined' && typeof data[current_key] != 'undefined') {
-          if (jQuery('.bwg_ctrl_btn').hasClass('fa-pause')) {
-            bwg_play();
-          }
-          if (!from_effect) {
-            /* Change image key.*/
-            jQuery("#bwg_current_image_key").val(key);
-            /*if (current_key == '-1') {
-              current_key = jQuery(".bwg_thumb_active").children("img").attr("image_key");
-            }*/
-          }
-          if (bwg_trans_in_progress) {
-            event_stack.push(current_key + '-' + key);
-            return;
-          }
-          var direction = 'right';
-          if (bwg_current_key > key) {
-            var direction = 'left';
-          }
-          else if (bwg_current_key == key) {
-            return;
-          }
-          jQuery("#spider_popup_left").hover().css({"display": "inline"});
-          jQuery("#spider_popup_right").hover().css({"display": "inline"});
-          jQuery(".bwg_image_count").html(data[key]["number"]);
-          /* Set filmstrip initial position.*/
-          jQuery(".bwg_watermark").css({display: 'none'});
-          /* Set active thumbnail position.*/
-          bwg_current_filmstrip_pos = key * (jQuery(".bwg_filmstrip_thumbnail").width() + 2 + 2 * <?php echo $theme_row->lightbox_filmstrip_thumb_border_width; ?>);
-          bwg_current_key = key;
-          /* Change image id.*/
-          jQuery("#bwg_popup_image").attr('image_id', data[key]["id"]);
-          /* Change image title, description.*/
-          jQuery(".bwg_image_title").html(jQuery('<div />').html(data[key]["alt"]).text());
-          jQuery(".bwg_image_description").html(jQuery('<div />').html(data[key]["description"]).text());
-          if (jQuery(".bwg_image_info_container1").css("display") != 'none') {
-            jQuery(".bwg_image_info_container1").css("display", "table-cell");
-          }
-          else {
-            jQuery(".bwg_image_info_container1").css("display", "none");
-          }
+        if (typeof data[key] != 'undefined') {
+          if (typeof data[current_key] != 'undefined') {
+            if (jQuery(".bwg_play_pause").length && !jQuery(".bwg_play_pause").hasClass("fa-play")) {
+              bwg_play();
+            }
+            if (!from_effect) {
+              /* Change image key.*/
+              jQuery("#bwg_current_image_key").val(key);
+              /*if (current_key == '-1') {
+                current_key = jQuery(".bwg_thumb_active").children("img").attr("image_key");
+              }*/
+            }
+            if (bwg_trans_in_progress) {
+              event_stack.push(current_key + '-' + key);
+              return;
+            }
+            var direction = 'right';
+            if (bwg_current_key > key) {
+              var direction = 'left';
+            }
+            else if (bwg_current_key == key) {
+              return;
+            }
+            /*jQuery("#spider_popup_left").hover().css({"display": "inline"});
+            jQuery("#spider_popup_right").hover().css({"display": "inline"});*/
+            jQuery(".bwg_image_count").html(data[key]["number"]);
+            /* Set filmstrip initial position.*/
+            jQuery(".bwg_watermark").css({display: 'none'});
+            /* Set active thumbnail position.*/
+            bwg_current_filmstrip_pos = key * (jQuery(".bwg_filmstrip_thumbnail").width() + 2 + 2 * <?php echo $theme_row->lightbox_filmstrip_thumb_border_width; ?>);
+            bwg_current_key = key;
+            /* Change image id.*/
+            jQuery("#bwg_popup_image").attr('image_id', data[key]["id"]);
+            /* Change image title, description.*/
+            jQuery(".bwg_image_title").html(jQuery('<span style="display: block;" />').html(data[key]["alt"]).text());
+            jQuery(".bwg_image_description").html(jQuery('<span style="display: block;" />').html(data[key]["description"]).text());
+            /*jQuery(".bwg_image_info").removeAttr("style");*/
+            if (data[key]["alt"].trim() == "") {
+              if (data[key]["description"].trim() == "") {
+                      jQuery(".bwg_image_info").css("background", "none");
+              }
+            }
+            if (jQuery(".bwg_image_info_container1").css("display") != 'none') {
+              jQuery(".bwg_image_info_container1").css("display", "table-cell");
+            }
+            else {
+              jQuery(".bwg_image_info_container1").css("display", "none");
+            }
           var current_image_class = jQuery(".bwg_popup_image_spun").css("zIndex") == 2 ? ".bwg_popup_image_spun" : ".bwg_popup_image_second_spun";
           var next_image_class = current_image_class == ".bwg_popup_image_second_spun" ? ".bwg_popup_image_spun" : ".bwg_popup_image_second_spun";
           
-          var is_video = data[key]['filetype'] == "YOUTUBE" || data[key]['filetype'] == "VIMEO";
+          var is_embed = data[key]['filetype'].indexOf("EMBED_") > -1 ? true : false;
+          var is_embed_instagram_post = data[key]['filetype'].indexOf('INSTAGRAM_POST') > -1 ? true :false;
           var cur_height = jQuery(current_image_class).height();
           var cur_width = jQuery(current_image_class).width();
           var innhtml = '<span class="bwg_popup_image_spun1" style="display: table; width: inherit; height: inherit;"><span class="bwg_popup_image_spun2" style="display: table-cell; vertical-align: middle; text-align: center;">';
-          if (!is_video) {
-            innhtml += '<img style="max-height: ' + cur_height + 'px; max-width: ' + cur_width + 'px;" class="bwg_popup_image" src="<?php echo site_url() . '/' . $WD_BWG_UPLOAD_DIR; ?>' + jQuery('<div />').html(data[key]["image_url"]).text() + '" alt="' + data[key]["alt"] + '" />';
+          if (!is_embed) {
+              innhtml += '<img style="max-height: ' + cur_height + 'px; max-width: ' + cur_width + 'px;" class="bwg_popup_image bwg_popup_watermark" src="<?php echo site_url() . '/' . $WD_BWG_UPLOAD_DIR; ?>' + jQuery('<span style="display: block;" />').html(data[key]["image_url"]).text() + '" alt="' + data[key]["alt"] + '" />';
           }
-          else {
-            innhtml += '<span style="height: ' + cur_height + 'px; width: ' + cur_width + 'px;" class="bwg_popup_video"><iframe class="bwg_video_frame" src="'  + (data[key]['filetype'] == "YOUTUBE" ? "//www.youtube.com/embed/" + data[key]['filename'] + "?enablejsapi=1" : "//player.vimeo.com/video/" + data[key]['filename'] + "?api=1") + '" frameborder="0" allowfullscreen style="width:100%; height:100%;"></iframe></span>';
+          else { /*is_embed*/
+
+            innhtml += '<span style="height: ' + cur_height + 'px; width: ' + cur_width + 'px;" class="bwg_popup_embed bwg_popup_watermark">';
+            if (is_embed_instagram_post) {
+              var post_width = 0;
+              var post_height = 0;
+              if (cur_height < cur_width + 88) {
+                post_height = cur_height;
+                post_width = post_height - 88;
+              }
+              else {
+                post_width = cur_width;
+                post_height = post_width + 88;
+              }
+              innhtml += spider_display_embed(data[key]['filetype'], data[key]['filename'], {class:"bwg_embed_frame", 'data-width': data[key]['image_width'], 'data-height': data[key]['image_height'], frameborder: "0", allowfullscreen: "allowfullscreen", style: "width:" + post_width + "px; height:" + post_height + "px; vertical-align:middle; display:inline-block; position:relative;"});
+            }
+            else{
+              innhtml += spider_display_embed(data[key]['filetype'], data[key]['filename'], {class:"bwg_embed_frame", frameborder:"0", allowfullscreen:"allowfullscreen", style:"width:inherit; height:inherit; vertical-align:middle; display:table-cell;" });
+            }
+            innhtml += "</span>";
           }
           innhtml += '</span></span>';
           jQuery(next_image_class).html(innhtml);
           
           function bwg_afterload() {
             <?php
-            if ($option_row->preload_images) {
+            if ($wd_bwg_options->preload_images) {
               echo 'bwg_preload_images(key);';
             }
             ?>
             bwg_<?php echo $image_effect; ?>(current_image_class, next_image_class, direction);
-            jQuery("#bwg_fullsize_image").attr("href", "<?php echo site_url() . '/' . $WD_BWG_UPLOAD_DIR; ?>" + data[key]['image_url']);
-            jQuery("#bwg_download").attr("href", "<?php echo site_url() . '/' . $WD_BWG_UPLOAD_DIR; ?>" + data[key]['image_url']);
+            jQuery("#bwg_download").show();
+            if (!is_embed) {
+              jQuery("#bwg_fullsize_image").attr("href", "<?php echo site_url() . '/' . $WD_BWG_UPLOAD_DIR; ?>" + data[key]['image_url']);
+              jQuery("#bwg_download").attr("href", "<?php echo site_url() . '/' . $WD_BWG_UPLOAD_DIR; ?>" + data[key]['thumb_url'].replace('/thumb/', '/.original/'));
+            }
+            else {
+              jQuery("#bwg_fullsize_image").attr("href", data[key]['image_url']);
+              if (data[key]['filetype'].indexOf("FLICKR_") > -1) {
+                jQuery("#bwg_download").attr("href", data[key]['filename']);
+              }
+              else if (data[key]['filetype'].indexOf("INSTAGRAM_") > -1) {
+                jQuery("#bwg_download").attr("href", data[key]['thumb_url'].substring(0, data[key]['thumb_url'].length - 1) + 'l');
+              }
+              else {
+               jQuery("#bwg_download").hide();
+              }
+            }
             var image_arr = data[key]['image_url'].split("/");
             jQuery("#bwg_download").attr("download", image_arr[image_arr.length - 1]);
             /* Load comments.*/
@@ -1359,13 +1461,15 @@ class BWGViewGalleryBox {
               }
             }
             /* Update custom scroll.*/
-            if (typeof jQuery().mCustomScrollbar !== 'undefined' && jQuery.isFunction(jQuery().mCustomScrollbar)) {
-              jQuery(".bwg_comments").mCustomScrollbar({
-                advanced:{
-                  updateOnContentResize: true
+              if (typeof jQuery().mCustomScrollbar !== 'undefined') {
+                if (jQuery.isFunction(jQuery().mCustomScrollbar)) {
+                  jQuery(".bwg_comments").mCustomScrollbar({
+                    advanced:{
+                      updateOnContentResize: true
+                    }
+                  });
                 }
-              });
-            }
+              }
             jQuery(".mCSB_scrollTools").hide();
             <?php
             if ($enable_image_filmstrip) {
@@ -1374,8 +1478,9 @@ class BWGViewGalleryBox {
               <?php
             }
             ?>
+            bwg_resize_instagram_post();
           }
-          if (!is_video) {
+          if (!is_embed) {
             var cur_img = jQuery(next_image_class).find('img');
             cur_img.one('load', function() {
               bwg_afterload();
@@ -1385,6 +1490,7 @@ class BWGViewGalleryBox {
           }
           else {
             bwg_afterload();
+            }
           }
         }
       }
@@ -1404,27 +1510,47 @@ class BWGViewGalleryBox {
         else if (e.keyCode === 32) { /* Space.*/
           jQuery(".bwg_play_pause").trigger('click');
         }
-        if (e.preventDefault) {
-          e.preventDefault();
-        }
-        else {
-          e.returnValue = false;
-        }
       });
       function bwg_preload_images(key) {
-        count = <?php echo (int) $option_row->preload_images_count / 2; ?>;
+        count = <?php echo (int) $wd_bwg_options->preload_images_count / 2; ?>;
+        var count_all = data.length;
+        if (count_all < <?php echo $wd_bwg_options->preload_images_count; ?>) {
+          count = 0;
+        }
         if (count != 0) {
           for (var i = key - count; i < key + count; i++) {
-            jQuery("<img/>").attr("src", (typeof data[i] != "undefined" && !(data[i]['filetype'] == "YOUTUBE" || data[i]['filetype'] == "VIMEO")) ? '<?php echo site_url() . '/' . $WD_BWG_UPLOAD_DIR; ?>' + jQuery('<div />').html(data[i]["image_url"]).text() : "");
+            var index = parseInt((i + count_all) % count_all);
+            var is_embed = data[index]['filetype'].indexOf("EMBED_") > -1 ? true : false;
+            if (typeof data[index] != "undefined") {
+              if (!is_embed) {
+                jQuery("<img/>").attr("src", '<?php echo site_url() . '/' . $WD_BWG_UPLOAD_DIR; ?>' + jQuery('<span style="display: block;" />').html(data[index]["image_url"]).text());
+              }
+            }
           }
         }
         else {
           for (var i = 0; i < data.length; i++) {
-            jQuery("<img/>").attr("src", (typeof data[i] != "undefined" && !(data[i]['filetype'] == "YOUTUBE" || data[i]['filetype'] == "VIMEO")) ? '<?php echo site_url() . '/' . $WD_BWG_UPLOAD_DIR; ?>' + jQuery('<div />').html(data[i]["image_url"]).text() : "");
+            var is_embed = data[i]['filetype'].indexOf("EMBED_") > -1 ? true : false;
+            if (typeof data[i] != "undefined") {
+              if (!is_embed) {
+                jQuery("<img/>").attr("src", '<?php echo site_url() . '/' . $WD_BWG_UPLOAD_DIR; ?>' + jQuery('<span style="display: block;" />').html(data[i]["image_url"]).text());
+              }
+            }
           }
         }
       }
       function bwg_popup_resize() {
+        if (typeof jQuery().fullscreen !== 'undefined') {
+          if (jQuery.isFunction(jQuery().fullscreen)) {
+            if (!jQuery.fullscreen.isFullScreen()) {
+              jQuery(".bwg_resize-full").show();
+              jQuery(".bwg_resize-full").attr("class", "bwg_ctrl_btn bwg_resize-full fa fa-resize-full");
+              jQuery(".bwg_resize-full").attr("title", "<?php echo __('Maximize', 'bwg'); ?>");
+              jQuery(".bwg_fullscreen").attr("class", "bwg_ctrl_btn bwg_fullscreen fa fa-fullscreen");
+              jQuery(".bwg_fullscreen").attr("title", "<?php echo __('Fullscreen', 'bwg'); ?>");
+            }
+          }
+        }
         var comment_container_width = 0;
         if (jQuery(".bwg_comment_container").hasClass("bwg_open")) {
           comment_container_width = <?php echo $theme_row->lightbox_comment_width; ?>;
@@ -1439,7 +1565,7 @@ class BWGViewGalleryBox {
         else {
           jQuery(".spider_popup_close_fullscreen").show();
         }
-        if (jQuery(window).height() > <?php echo $image_height; ?> && <?php echo $open_with_fullscreen; ?> != 1 ) {
+        if (!(!(jQuery(window).height() > <?php echo $image_height; ?>) || !(<?php echo $open_with_fullscreen; ?> != 1))) {
           jQuery("#spider_popup_wrap").css({
             height: <?php echo $image_height; ?>,
             top: '50%',
@@ -1450,7 +1576,7 @@ class BWGViewGalleryBox {
           jQuery(".bwg_popup_image").css({
             maxHeight: <?php echo $image_height - $image_filmstrip_height; ?>
           });
-          jQuery(".bwg_popup_video").css({
+          jQuery(".bwg_popup_embed").css({
             height: <?php echo $image_height - $image_filmstrip_height; ?>
           });
           bwg_popup_current_height = <?php echo $image_height; ?>;
@@ -1466,12 +1592,12 @@ class BWGViewGalleryBox {
           jQuery(".bwg_popup_image").css({
             maxHeight: jQuery(window).height() - <?php echo $image_filmstrip_height; ?>
           });
-          jQuery(".bwg_popup_video").css({
+          jQuery(".bwg_popup_embed").css({
             height: jQuery(window).height() - <?php echo $image_filmstrip_height; ?>
           });
           bwg_popup_current_height = jQuery(window).height();
         }
-        if (jQuery(window).width() >= <?php echo $image_width; ?> && <?php echo $open_with_fullscreen; ?> != 1 ) {  
+        if (!(!(jQuery(window).width() >= <?php echo $image_width; ?>) || !(<?php echo $open_with_fullscreen; ?> != 1))) {
           jQuery("#spider_popup_wrap").css({
             width: <?php echo $image_width; ?>,
             left: '50%',
@@ -1479,10 +1605,11 @@ class BWGViewGalleryBox {
             zIndex: 100000
           });
           jQuery(".bwg_image_wrap").css({width: <?php echo $image_width; ?> - comment_container_width});
+          jQuery(".bwg_image_container").css({width: <?php echo $image_width; ?> - comment_container_width});
           jQuery(".bwg_popup_image").css({
             maxWidth: <?php echo $image_width; ?> - comment_container_width
           });
-          jQuery(".bwg_popup_video").css({
+          jQuery(".bwg_popup_embed").css({
             width: <?php echo $image_width; ?> - comment_container_width
           });
           jQuery(".bwg_filmstrip_container").css({width: <?php echo $image_width; ?> - comment_container_width});
@@ -1497,10 +1624,11 @@ class BWGViewGalleryBox {
             zIndex: 100000
           });
           jQuery(".bwg_image_wrap").css({width: (jQuery(window).width() - comment_container_width)});
+          jQuery(".bwg_image_container").css({width: jQuery(window).width() - comment_container_width});
           jQuery(".bwg_popup_image").css({
             maxWidth: jQuery(window).width() - comment_container_width
           });
-          jQuery(".bwg_popup_video").css({
+          jQuery(".bwg_popup_embed").css({
             width: jQuery(window).width() - comment_container_width
           });
           jQuery(".bwg_filmstrip_container").css({width: (jQuery(window).width() - comment_container_width)});
@@ -1508,19 +1636,34 @@ class BWGViewGalleryBox {
           bwg_popup_current_width = jQuery(window).width();
         }
         /* Set watermark container size.*/
+        bwg_resize_instagram_post();
         bwg_change_watermark_container();
-        if (((jQuery(window).height() > <?php echo $image_height - 2 * $theme_row->lightbox_close_btn_top; ?>) && (jQuery(window).width() >= <?php echo $image_width - 2 * $theme_row->lightbox_close_btn_right; ?>)) && (<?php echo $open_with_fullscreen; ?> != 1)) {
+        if (!(!(jQuery(window).height() > <?php echo $image_height - 2 * $theme_row->lightbox_close_btn_top; ?>) || !(jQuery(window).width() >= <?php echo $image_width - 2 * $theme_row->lightbox_close_btn_right; ?>) || !(<?php echo $open_with_fullscreen; ?> != 1))) {
           jQuery(".spider_popup_close_fullscreen").attr("class", "spider_popup_close");
         }
         else {
-          if ((jQuery("#spider_popup_wrap").width() < jQuery(window).width()) && (jQuery("#spider_popup_wrap").height() < jQuery(window).height())) {
+          if (!(!(jQuery("#spider_popup_wrap").width() < jQuery(window).width()) || !(jQuery("#spider_popup_wrap").height() < jQuery(window).height()))) {
             jQuery(".spider_popup_close").attr("class", "bwg_ctrl_btn spider_popup_close_fullscreen");
+          }
+        }
+        if ("<?php echo $theme_row->lightbox_ctrl_btn_pos ;?>" == 'bottom') {
+          if (jQuery(".bwg_toggle_container i").hasClass('fa-angle-down')) {
+            jQuery(".bwg_toggle_container").css("bottom", jQuery(".bwg_ctrl_btn_container").height() + "px");
+          }
+        }
+        if ("<?php echo $theme_row->lightbox_ctrl_btn_pos ;?>" == 'top') {
+          if (jQuery(".bwg_toggle_container i").hasClass('fa-angle-up')) {
+            jQuery(".bwg_toggle_container").css("top", jQuery(".bwg_ctrl_btn_container").height() + "px");
           }
         }
       }
       jQuery(window).resize(function() {
-        if (typeof jQuery().fullscreen !== 'undefined' && jQuery.isFunction(jQuery().fullscreen) && !jQuery.fullscreen.isFullScreen()) {
-          bwg_popup_resize();
+        if (typeof jQuery().fullscreen !== 'undefined') {
+          if (jQuery.isFunction(jQuery().fullscreen)) {
+            if (!jQuery.fullscreen.isFullScreen()) {
+              bwg_popup_resize();
+            }
+          }
         }
       });
       /* Popup current width/height.*/
@@ -1546,11 +1689,13 @@ class BWGViewGalleryBox {
               duration: 500,
               complete: function () { bwg_change_watermark_container(); }
             });
-          jQuery(".bwg_popup_video").animate({
+          jQuery(".bwg_popup_embed").animate({
               width: jQuery("#spider_popup_wrap").width()
             }, {
               duration: 500,
-              complete: function () { bwg_change_watermark_container(); }
+              complete: function () { 
+                bwg_resize_instagram_post();
+                bwg_change_watermark_container(); }
             });
           jQuery(".bwg_filmstrip_container").animate({width: jQuery(".spider_popup_wrap").width()}, 500);
           jQuery(".bwg_filmstrip").animate({width: jQuery(".spider_popup_wrap").width() - 40}, 500);
@@ -1587,11 +1732,13 @@ class BWGViewGalleryBox {
               duration: 500,
               complete: function () { bwg_change_watermark_container(); }
             });
-          jQuery(".bwg_popup_video").animate({
+          jQuery(".bwg_popup_embed").animate({
               width: jQuery("#spider_popup_wrap").width() - jQuery(".bwg_comment_container").width()
             }, {
               duration: 500,
-              complete: function () { bwg_change_watermark_container(); }
+              complete: function () { 
+                bwg_resize_instagram_post();
+                bwg_change_watermark_container(); }
             });
           jQuery(".bwg_filmstrip_container").css({width: jQuery("#spider_popup_wrap").width() - jQuery(".bwg_comment_container").width()});
           jQuery(".bwg_filmstrip").animate({width: jQuery(".bwg_filmstrip_container").width() - 40}, 500);
@@ -1612,11 +1759,13 @@ class BWGViewGalleryBox {
       function bwg_reset_zoom() {
         var isMobile = (/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(navigator.userAgent.toLowerCase()));
         var viewportmeta = document.querySelector('meta[name="viewport"]');
-        if (isMobile && viewportmeta) {
-          viewportmeta.content = 'width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=0';
+        if (isMobile) {
+          if (viewportmeta) {
+            viewportmeta.content = 'width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=0';
+          }
         }
       }
-      jQuery(document).ready(function () {
+      /* jQuery(document).ready(function () { */
       	<?php
         if ($image_right_click) {
           ?>
@@ -1624,27 +1773,35 @@ class BWGViewGalleryBox {
           jQuery(".bwg_image_wrap").bind("contextmenu", function (e) {
             return false;
           });
+           jQuery(".bwg_image_wrap").css('webkitTouchCallout','none');
           <?php
         }
         ?>
-        if (typeof jQuery().swiperight !== 'undefined' && jQuery.isFunction(jQuery().swiperight)) {
-          jQuery('#spider_popup_wrap').swiperight(function () {
-            bwg_change_image(parseInt(jQuery('#bwg_current_image_key').val()), parseInt(jQuery('#bwg_current_image_key').val()) - 1, data)
-            return false;
-          });
+        jQuery('#spider_popup_wrap').bind('touchmove', function (event) {
+          event.preventDefault();
+        });
+        if (typeof jQuery().swiperight !== 'undefined') {
+          if (jQuery.isFunction(jQuery().swiperight)) {
+            jQuery('#spider_popup_wrap').swiperight(function () {
+            bwg_change_image(parseInt(jQuery('#bwg_current_image_key').val()), (parseInt(jQuery('#bwg_current_image_key').val()) + data.length - 1) % data.length, data);
+              return false;
+            });
+          }
         }
-        if (typeof jQuery().swipeleft !== 'undefined' && jQuery.isFunction(jQuery().swipeleft)) {
-          jQuery('#spider_popup_wrap').swipeleft(function () {
-            bwg_change_image(parseInt(jQuery('#bwg_current_image_key').val()), parseInt(jQuery('#bwg_current_image_key').val()) + 1, data);
-            return false;
-          });
+        if (typeof jQuery().swipeleft !== 'undefined') {
+          if (jQuery.isFunction(jQuery().swipeleft)) {
+            jQuery('#spider_popup_wrap').swipeleft(function () {
+            bwg_change_image(parseInt(jQuery('#bwg_current_image_key').val()), (parseInt(jQuery('#bwg_current_image_key').val()) + 1) % data.length, data);
+              return false;
+            });
+          }
         }
 
         bwg_reset_zoom();
         var isMobile = (/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(navigator.userAgent.toLowerCase()));
         var bwg_click = isMobile ? 'touchend' : 'click';
         jQuery("#spider_popup_left").on(bwg_click, function () {
-          bwg_change_image(parseInt(jQuery('#bwg_current_image_key').val()), (parseInt(jQuery('#bwg_current_image_key').val()) - 1) >= 0 ? (parseInt(jQuery('#bwg_current_image_key').val()) - 1) % data.length : data.length - 1, data);
+          bwg_change_image(parseInt(jQuery('#bwg_current_image_key').val()), (parseInt(jQuery('#bwg_current_image_key').val()) + data.length - 1) % data.length, data);
           return false;
         });
         jQuery("#spider_popup_right").on(bwg_click, function () {
@@ -1664,14 +1821,20 @@ class BWGViewGalleryBox {
           bwg_change_watermark_container();
         }, 500);
         /* If browser doesn't support Fullscreen API.*/
-        if (typeof jQuery().fullscreen !== 'undefined' && jQuery.isFunction(jQuery().fullscreen) && !jQuery.fullscreen.isNativelySupported()) {
-          jQuery(".bwg_fullscreen").hide();
+        if (typeof jQuery().fullscreen !== 'undefined') {
+          if (jQuery.isFunction(jQuery().fullscreen)) {
+            if (!jQuery.fullscreen.isNativelySupported()) {
+              jQuery(".bwg_fullscreen").hide();
+            }
+          }
         }
         /* Set image container height.*/
         jQuery(".bwg_image_container").height(jQuery(".bwg_image_wrap").height() - <?php echo $image_filmstrip_height; ?>);
         /* Change default scrollbar in comments.*/
-        if (typeof jQuery().mCustomScrollbar !== 'undefined' && jQuery.isFunction(jQuery().mCustomScrollbar)) {
-          jQuery(".bwg_comments").mCustomScrollbar({scrollInertia: 150});
+        if (typeof jQuery().mCustomScrollbar !== 'undefined') {
+          if (jQuery.isFunction(jQuery().mCustomScrollbar)) {
+            jQuery(".bwg_comments").mCustomScrollbar({scrollInertia: 150});
+          }
         }
         var mousewheelevt = (/Firefox/i.test(navigator.userAgent)) ? "DOMMouseScroll" : "mousewheel" /*FF doesn't recognize mousewheel as of FF3.x*/
         jQuery('.bwg_filmstrip').on(mousewheelevt, function(e) {
@@ -1813,7 +1976,7 @@ class BWGViewGalleryBox {
               zIndex: 100000
             }, 500);
             jQuery(".bwg_image_wrap").animate({width: bwg_popup_current_width - comment_container_width}, 500);
-            jQuery(".bwg_image_container").animate({height: bwg_popup_current_height - <?php echo $image_filmstrip_height; ?>}, 500);
+            jQuery(".bwg_image_container").animate({height: bwg_popup_current_height - <?php echo $image_filmstrip_height; ?>, width: bwg_popup_current_width - comment_container_width}, 500);
             jQuery(".bwg_popup_image").animate({
                 maxWidth: bwg_popup_current_width - comment_container_width,
                 maxHeight: bwg_popup_current_height - <?php echo $image_filmstrip_height; ?>
@@ -1821,20 +1984,25 @@ class BWGViewGalleryBox {
                 duration: 500,
                 complete: function () {
                   bwg_change_watermark_container();
-                  if ((jQuery("#spider_popup_wrap").width() < jQuery(window).width()) && (jQuery("#spider_popup_wrap").height() < jQuery(window).height())) {
-                    jQuery(".spider_popup_close_fullscreen").attr("class", "spider_popup_close");
+                  if ((jQuery("#spider_popup_wrap").width() < jQuery(window).width())) {
+                    if (jQuery("#spider_popup_wrap").height() < jQuery(window).height()) {
+                      jQuery(".spider_popup_close_fullscreen").attr("class", "spider_popup_close");
+                    }
                   }
                 }
               });
-            jQuery(".bwg_popup_video").animate({
+            jQuery(".bwg_popup_embed").animate({
                 width: bwg_popup_current_width - comment_container_width,
                 height: bwg_popup_current_height - <?php echo $image_filmstrip_height; ?>
               }, {
                 duration: 500,
                 complete: function () {
+                  bwg_resize_instagram_post();
                   bwg_change_watermark_container();
-                  if ((jQuery("#spider_popup_wrap").width() < jQuery(window).width()) && (jQuery("#spider_popup_wrap").height() < jQuery(window).height())) {
-                    jQuery(".spider_popup_close_fullscreen").attr("class", "spider_popup_close");
+                  if (jQuery("#spider_popup_wrap").width() < jQuery(window).width()) {
+                    if (jQuery("#spider_popup_wrap").height() < jQuery(window).height()) {
+                      jQuery(".spider_popup_close_fullscreen").attr("class", "spider_popup_close");
+                    }
                   }
                 }
               });
@@ -1858,7 +2026,7 @@ class BWGViewGalleryBox {
               zIndex: 100000
             }, 500);
             jQuery(".bwg_image_wrap").animate({width: (jQuery(window).width() - comment_container_width)}, 500);
-            jQuery(".bwg_image_container").animate({height: (bwg_popup_current_height - <?php echo $image_filmstrip_height; ?>)}, 500);
+            jQuery(".bwg_image_container").animate({height: (bwg_popup_current_height - <?php echo $image_filmstrip_height; ?>), width: bwg_popup_current_width - comment_container_width}, 500);
             jQuery(".bwg_popup_image").animate({
                 maxWidth: jQuery(window).width() - comment_container_width,
                 maxHeight: jQuery(window).height() - <?php echo $image_filmstrip_height; ?>
@@ -1866,12 +2034,14 @@ class BWGViewGalleryBox {
                 duration: 500,
                 complete: function () { bwg_change_watermark_container(); }
               });
-            jQuery(".bwg_popup_video").animate({
+            jQuery(".bwg_popup_embed").animate({
                 width: jQuery(window).width() - comment_container_width,
                 height: jQuery(window).height() - <?php echo $image_filmstrip_height; ?>
               }, {
                 duration: 500,
-                complete: function () { bwg_change_watermark_container(); }
+                complete: function () { 
+                  bwg_resize_instagram_post();
+                  bwg_change_watermark_container(); }
               });
             jQuery(".bwg_filmstrip_container").animate({width: jQuery(window).width() - comment_container_width}, 500);
             jQuery(".bwg_filmstrip").animate({width: jQuery(window).width() - comment_container_width - 40}, 500);
@@ -1883,17 +2053,13 @@ class BWGViewGalleryBox {
           }
         });
         /* Fullscreen.*/
+        /*Toggle with mouse click*/
         jQuery(".bwg_fullscreen").on(bwg_click, function () {
           jQuery(".bwg_watermark").css({display: 'none'});
           var comment_container_width = 0;
           if (jQuery(".bwg_comment_container").hasClass("bwg_open")) {
             comment_container_width = jQuery(".bwg_comment_container").width();
           }
-          /*jQuery(document).on("fscreenchange", function () {
-            if (typeof jQuery().fullscreen !== 'undefined' && jQuery.isFunction(jQuery().fullscreen) && jQuery.fullscreen.isFullScreen()) {
-              bwg_exit_fullscreen();
-            }
-          });*/
           function bwg_exit_fullscreen() {
             if (jQuery(window).width() > <?php echo $image_width; ?>) {
               bwg_popup_current_width = <?php echo $image_width; ?>;
@@ -1921,17 +2087,18 @@ class BWGViewGalleryBox {
                 zIndex: 100000
               });
               jQuery(".bwg_image_wrap").css({width: bwg_popup_current_width - comment_container_width});
-              jQuery(".bwg_image_container").css({height: bwg_popup_current_height - <?php echo $image_filmstrip_height; ?>});
+              jQuery(".bwg_image_container").css({height: bwg_popup_current_height - <?php echo $image_filmstrip_height; ?>, width: bwg_popup_current_width - comment_container_width});
               /*jQuery(".bwg_slide_bg").css({height: bwg_popup_current_height - <?php echo $image_filmstrip_height; ?>});
               jQuery(".bwg_popup_image_spun1").css({height: bwg_popup_current_height - <?php echo $image_filmstrip_height; ?>});*/
               jQuery(".bwg_popup_image").css({
                 maxWidth: bwg_popup_current_width - comment_container_width,
                 maxHeight: bwg_popup_current_height - <?php echo $image_filmstrip_height; ?>
               });
-              jQuery(".bwg_popup_video").css({
+              jQuery(".bwg_popup_embed").css({
                 width: bwg_popup_current_width - comment_container_width,
                 height: bwg_popup_current_height - <?php echo $image_filmstrip_height; ?>
               });
+              bwg_resize_instagram_post();
               /* Set watermark container size.*/
               bwg_change_watermark_container();
               jQuery(".bwg_filmstrip_container").css({width: bwg_popup_current_width - comment_container_width});
@@ -1943,12 +2110,15 @@ class BWGViewGalleryBox {
               jQuery(".bwg_resize-full").attr("title", "<?php echo __('Maximize', 'bwg'); ?>");
               jQuery(".bwg_fullscreen").attr("class", "bwg_ctrl_btn bwg_fullscreen fa fa-fullscreen");
               jQuery(".bwg_fullscreen").attr("title", "<?php echo __('Fullscreen', 'bwg'); ?>");
-              if ((jQuery("#spider_popup_wrap").width() < jQuery(window).width()) && (jQuery("#spider_popup_wrap").height() < jQuery(window).height())) {
-                jQuery(".spider_popup_close_fullscreen").attr("class", "spider_popup_close");
+              if (jQuery("#spider_popup_wrap").width() < jQuery(window).width()) {
+                if (jQuery("#spider_popup_wrap").height() < jQuery(window).height()) {
+                  jQuery(".spider_popup_close_fullscreen").attr("class", "spider_popup_close");
+                }
               }
             });
           }
-          if (typeof jQuery().fullscreen !== 'undefined' && jQuery.isFunction(jQuery().fullscreen)) {
+          if (typeof jQuery().fullscreen !== 'undefined') {
+            if (jQuery.isFunction(jQuery().fullscreen)) {
             if (jQuery.fullscreen.isFullScreen()) {
               /* Exit Fullscreen.*/
               jQuery.fullscreen.exit();
@@ -1970,16 +2140,17 @@ class BWGViewGalleryBox {
                   zIndex: 100000
                 });
                 jQuery(".bwg_image_wrap").css({width: screen_width - comment_container_width});
-                jQuery(".bwg_image_container").css({height: (screen_height - <?php echo $image_filmstrip_height; ?>)});
+                jQuery(".bwg_image_container").css({height: (screen_height - <?php echo $image_filmstrip_height; ?>), width: screen_width - comment_container_width});
                 /* jQuery(".bwg_slide_bg").css({height: screen_height - <?php echo $image_filmstrip_height; ?>});*/
                 jQuery(".bwg_popup_image").css({
                   maxWidth: (screen_width - comment_container_width),
                   maxHeight: (screen_height - <?php echo $image_filmstrip_height; ?>)
                 });
-                jQuery(".bwg_popup_video").css({
+                jQuery(".bwg_popup_embed").css({
                   width: (screen_width - comment_container_width),
                   height: (screen_height - <?php echo $image_filmstrip_height; ?>)
                 });
+                bwg_resize_instagram_post();
                 /* Set watermark container size.*/
                 bwg_change_watermark_container();
                 jQuery(".bwg_filmstrip_container").css({width: (screen_width - comment_container_width)});
@@ -1992,14 +2163,15 @@ class BWGViewGalleryBox {
                 jQuery(".spider_popup_close").attr("class", "bwg_ctrl_btn spider_popup_close_fullscreen");
               /*});
               }*/
+              }
             }
           }
           return false;
         });
         /* Play/pause.*/
         jQuery(".bwg_play_pause, .bwg_popup_image").on(bwg_click, function () {
-          if (jQuery(".bwg_ctrl_btn").hasClass("fa-play")) {
-            /* PLay.*/
+          if (jQuery(".bwg_play_pause").length && jQuery(".bwg_play_pause").hasClass("fa-play")) {
+            /* Play.*/
             bwg_play();
             jQuery(".bwg_play_pause").attr("title", "<?php echo __('Pause', 'bwg'); ?>");
             jQuery(".bwg_play_pause").attr("class", "bwg_ctrl_btn bwg_play_pause fa fa-pause");
@@ -2030,11 +2202,13 @@ class BWGViewGalleryBox {
         }
         ?>
         <?php
-        if ($option_row->preload_images) {
+        if ($wd_bwg_options->preload_images) {
           echo "bwg_preload_images(parseInt(jQuery('#bwg_current_image_key').val()));";
         }
-        ?>        
-      });
+        ?>
+        jQuery(".bwg_popup_image").removeAttr("width");
+        jQuery(".bwg_popup_image").removeAttr("height");
+     /*  }); */
       /* Open with fullscreen.*/
       function bwg_open_with_fullscreen() {
         jQuery(".bwg_watermark").css({display: 'none'});
@@ -2060,11 +2234,13 @@ class BWGViewGalleryBox {
         },  {
           complete: function () { bwg_change_watermark_container(); }
          });
-        jQuery(".bwg_popup_video").css({
+        jQuery(".bwg_popup_embed").css({
          width: jQuery(window).width() - comment_container_width,
          height: jQuery(window).height() - <?php echo $image_filmstrip_height; ?>
         },  {
-          complete: function () { bwg_change_watermark_container(); }
+          complete: function () { 
+            bwg_resize_instagram_post();
+            bwg_change_watermark_container(); }
          });
         jQuery(".bwg_filmstrip_container").css({width: jQuery(window).width() - comment_container_width});
         jQuery(".bwg_filmstrip").css({width: jQuery(window).width() - comment_container_width - 40});
@@ -2076,12 +2252,35 @@ class BWGViewGalleryBox {
         jQuery(".spider_popup_close").attr("class", "bwg_ctrl_btn spider_popup_close_fullscreen");         
       }
 
+      function bwg_resize_instagram_post() {
+        if (jQuery('.inner_instagram_iframe_bwg_embed_frame').length) {
+          var post_width = jQuery(".bwg_image_container").width();
+          var post_height = jQuery(".bwg_image_container").height();
+          
+          jQuery('.inner_instagram_iframe_bwg_embed_frame').each(function() {
+            var parent_container = jQuery(this).parent();
+            if (post_height / (parseInt(parent_container.attr('data-height')) + 96) < post_width / parseInt(parent_container.attr('data-width'))) {
+              parent_container.height(post_height);
+              parent_container.width((parent_container.height() - 96) * parent_container.attr('data-width') / parent_container.attr('data-height') + 16);
+            }
+            else {
+              parent_container.width(post_width);
+              parent_container.height((parent_container.width() - 16) * parent_container.attr('data-height') / parent_container.attr('data-width') + 96);
+            }
+            parent_container.css({top: 0.5 * (post_height - parent_container.height())});
+          });
+          bwg_change_watermark_container();
+        }
+      }
+
       function bwg_play() {
         window.clearInterval(bwg_playInterval);
         bwg_playInterval = setInterval(function () {
           if (!data[parseInt(jQuery('#bwg_current_image_key').val()) + 1]) {
-            /* Wrap around.*/
-            bwg_change_image(parseInt(jQuery('#bwg_current_image_key').val()), 0, data);
+            if (<?php echo $wd_bwg_options->enable_loop; ?> == 1) {
+              /* Wrap around.*/
+              bwg_change_image(parseInt(jQuery('#bwg_current_image_key').val()), 0, data);
+            }
             return;
           }
           bwg_change_image(parseInt(jQuery('#bwg_current_image_key').val()), parseInt(jQuery('#bwg_current_image_key').val()) + 1, data)
@@ -2089,9 +2288,9 @@ class BWGViewGalleryBox {
       }
       jQuery(window).focus(function() {
         /* event_stack = [];*/
-        if (!jQuery(".bwg_ctrl_btn").hasClass("fa-play")) {
-          bwg_play();
-        }
+          if (jQuery(".bwg_play_pause").length && !jQuery(".bwg_play_pause").hasClass("fa-play")) {
+            bwg_play();
+          }
         /*var i = 0;
         jQuery(".bwg_slider").children("span").each(function () {
           if (jQuery(this).css('opacity') == 1) {

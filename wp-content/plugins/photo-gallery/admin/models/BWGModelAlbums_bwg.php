@@ -30,16 +30,18 @@ class BWGModelAlbums_bwg {
   ////////////////////////////////////////////////////////////////////////////////////////
   public function get_rows_data() {
     global $wpdb;
-    if (!current_user_can('manage_options') && $wpdb->get_var("SELECT gallery_role FROM " . $wpdb->prefix . "bwg_option")) {
+    global $wd_bwg_options;
+    if (!current_user_can('manage_options') && $wd_bwg_options->album_role) {
       $where = " WHERE author=" . get_current_user_id();
     }
     else {
       $where = " WHERE author>=0 ";
     }
     $where .= ((isset($_POST['search_value'])) ? ' AND name LIKE "%' . esc_html(stripslashes($_POST['search_value'])) . '%"' : '');
-    $asc_or_desc = ((isset($_POST['asc_or_desc'])) ? esc_html(stripslashes($_POST['asc_or_desc'])) : 'asc');
-    $asc_or_desc = ($asc_or_desc != 'asc') ? 'desc' : 'asc';
-    $order_by = ' ORDER BY `' . ((isset($_POST['order_by']) && esc_html(stripslashes($_POST['order_by'])) != '') ? esc_html(stripslashes($_POST['order_by'])) : 'order') . '` ' . $asc_or_desc;
+    $asc_or_desc = ((isset($_POST['asc_or_desc']) && esc_html($_POST['asc_or_desc']) == 'desc') ? 'desc' : 'asc');
+    $order_by_arr = array('id', 'name', 'slug', 'order', 'author', 'published');
+    $order_by = ((isset($_POST['order_by']) && in_array(esc_html($_POST['order_by']), $order_by_arr)) ? esc_html($_POST['order_by']) : 'order');
+    $order_by = ' ORDER BY `' . $order_by . '` ' . $asc_or_desc;
     if (isset($_POST['page_number']) && $_POST['page_number']) {
       $limit = ((int) $_POST['page_number'] - 1) * $this->per_page;
     }
@@ -53,8 +55,9 @@ class BWGModelAlbums_bwg {
   
   public function get_row_data($id) {
     global $wpdb;
+    global $wd_bwg_options;
     if ($id != 0) {
-      if (!current_user_can('manage_options') && $wpdb->get_var("SELECT gallery_role FROM " . $wpdb->prefix . "bwg_option")) {
+      if (!current_user_can('manage_options') && $wd_bwg_options->album_role) {
         $where = " WHERE author=" . get_current_user_id();
       }
       else {
@@ -78,7 +81,8 @@ class BWGModelAlbums_bwg {
   
   public function get_albums_galleries_rows_data($album_id) {
     global $wpdb;
-    if (!current_user_can('manage_options') && $wpdb->get_var("SELECT gallery_role FROM " . $wpdb->prefix . "bwg_option")) {
+    global $wd_bwg_options;
+    if (!current_user_can('manage_options') && $wd_bwg_options->album_role) {
       $where = " AND author=" . get_current_user_id();
     }
     else {

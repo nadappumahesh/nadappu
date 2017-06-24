@@ -23,7 +23,7 @@ $eemail_errors = array();
 $eemail_success = '';
 $eemail_error_found = FALSE;
 
-$search = isset($_GET['search']) ? $_GET['search'] : 'A,B,C';
+$search = isset($_GET['search']) ? htmlspecialchars($_GET['search'], ENT_QUOTES, 'UTF-8') : 'A,B,C';
 if (isset($_POST['eemail_sendmail_contactform']) && $_POST['eemail_sendmail_contactform'] == 'yes')
 {
 	//	Just security thingy that wordpress offers us
@@ -78,9 +78,6 @@ if ($eemail_error_found == TRUE && isset($eemail_errors[0]) == TRUE)
 ?>
 <script language="javascript" src="<?php echo get_option('siteurl'); ?>/wp-content/plugins/email-newsletter/sendemail/sendmail-setting.js"></script>
 <div class="wrap">
-<?php wp_enqueue_style('ee_rg_admin_template', plugins_url() ."/email-newsletter/extension/readygraph/assets/css/upgrade.css");
-
-echo '<div class="rg_info rg_message"><img src="'.plugins_url() .'/email-newsletter/extension/readygraph/assets/Sign-Alert-icon.png" style="float: left;height: 50px;padding-right: 10px;"><a href="admin.php?page=readygraph-app"><button class="button-warning pure-button" style="float: right; margin-right: 15px;">Connect ReadyGraph</button></a><h3 style="color:white">Grow your site traffic faster: Activate Email Newsletter\'s User Growth Engine (ReadyGraph)</h3><p style="color: whitesmoke">Promotion to New Users | Viral Signup Form | Site Update emails | Import Existing Users</p></div>'; ?>
   <div class="form-wrap">
     <div id="icon-plugins" class="icon32"></div>
     <h2><?php _e(WP_eemail_TITLE, 'email-newsletter'); ?> <?php _e('(Send email to simple contact form users)', 'email-newsletter'); ?></h2>

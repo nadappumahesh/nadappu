@@ -21,7 +21,7 @@ class BWGModelBWGShortcode {
 
   public function get_shortcode_data() {
     global $wpdb;
-    $shortcode = $wpdb->get_results("SELECT id, tagtext FROM " . $wpdb->prefix . "bwg_shortcode");
+    $shortcode = $wpdb->get_results("SELECT id, tagtext FROM " . $wpdb->prefix . "bwg_shortcode ORDER BY `id` ASC");
     return $shortcode;
   }
 
@@ -45,13 +45,6 @@ class BWGModelBWGShortcode {
     return $rows;
   }
 
-  public function get_option_row_data() {
-    global $wpdb;
-    $query = "SELECT * FROM " . $wpdb->prefix . "bwg_option WHERE id=1";
-    $rows = $wpdb->get_row($query);
-    return $rows;
-  }
-
   public function get_theme_rows_data() {
     global $wpdb;
     $query = "SELECT * FROM " . $wpdb->prefix . "bwg_theme ORDER BY name";
@@ -59,6 +52,13 @@ class BWGModelBWGShortcode {
     return $rows;
   }
 
+  public function get_tag_rows_data() {
+    global $wpdb;
+    $query ="SELECT * FROM ".$wpdb->prefix."terms as A LEFT JOIN ".$wpdb->prefix ."term_taxonomy as B ON A.term_id = B.term_id WHERE B.taxonomy='bwg_tag'";
+    $rows = $wpdb->get_results($query);
+    return $rows;
+  }
+  
   ////////////////////////////////////////////////////////////////////////////////////////
   // Getters & Setters                                                                  //
   ////////////////////////////////////////////////////////////////////////////////////////

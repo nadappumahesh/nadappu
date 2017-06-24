@@ -33,7 +33,7 @@ if (isset($_POST['eemail_form_submit']) && $_POST['eemail_form_submit'] == 'yes'
 		$CurrentDate = date('Y-m-d G:i:s'); 
 		for ($i = 0; $i < count($ArrayEmail); $i++)
 		{
-			$cSql = "select * from ".WP_eemail_TABLE_SUB." where eemail_email_sub='" . trim($ArrayEmail[$i]). "'";
+			$cSql = "select * from ".WP_eemail_TABLE_SUB." where eemail_email_sub='" . trim(sanitize_email($ArrayEmail[$i])). "'";
 			$data = $wpdb->get_results($cSql);
 			if ( empty($data) ) 
 			{
@@ -41,7 +41,7 @@ if (isset($_POST['eemail_form_submit']) && $_POST['eemail_form_submit'] == 'yes'
 					"INSERT INTO `".WP_eemail_TABLE_SUB."`
 					(`eemail_name_sub`,`eemail_email_sub`, `eemail_status_sub`, `eemail_date_sub`)
 					VALUES(%s, %s, %s, %s)",
-					array('No Name', $ArrayEmail[$i], $form['importemails_status'], $CurrentDate)
+					array('No Name', sanitize_email($ArrayEmail[$i]), $form['importemails_status'], $CurrentDate)
 				);
 				$wpdb->query($sql);
 				$Inserted = $Inserted + 1;
@@ -85,9 +85,6 @@ if ($eemail_error_found == FALSE && isset($eemail_success[0]) == TRUE)
 ?>
 <script language="javaScript" src="<?php echo get_option('siteurl'); ?>/wp-content/plugins/email-newsletter/subscriber/subscriber-setting.js"></script>
 <div class="form-wrap">
-<?php wp_enqueue_style('ee_rg_admin_template', plugins_url() ."/email-newsletter/extension/readygraph/assets/css/upgrade.css");
-
-echo '<div class="rg_info rg_message"><img src="'.plugins_url() .'/email-newsletter/extension/readygraph/assets/Sign-Alert-icon.png" style="float: left;height: 50px;padding-right: 10px;"><a href="admin.php?page=readygraph-app"><button class="button-warning pure-button" style="float: right; margin-right: 15px;">Connect ReadyGraph</button></a><h3 style="color:white">Grow your site traffic faster: Activate Email Newsletter\'s User Growth Engine (ReadyGraph)</h3><p style="color: whitesmoke">Promotion to New Users | Viral Signup Form | Site Update emails | Import Existing Users</p></div>'; ?>
 	<div id="icon-plugins" class="icon32"></div>
 	<h2><?php _e(WP_eemail_TITLE, 'email-newsletter'); ?></h2>
 	<form name="form_importemails" method="post" action="#" onsubmit="return _eemail_import()"  >

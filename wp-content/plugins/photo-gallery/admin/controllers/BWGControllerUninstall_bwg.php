@@ -14,12 +14,27 @@ class BWGControllerUninstall_bwg {
   // Constructor & Destructor                                                           //
   ////////////////////////////////////////////////////////////////////////////////////////
   public function __construct() {
+    global $bwg_options;
+    if (!class_exists("DoradoWebConfig")) {
+      include_once(WD_BWG_DIR . "/wd/config.php");
+    }
+    $config = new DoradoWebConfig();
+    $config->set_options($bwg_options);
+    $deactivate_reasons = new DoradoWebDeactivate($config);
+    $deactivate_reasons->submit_and_deactivate();
   }
   ////////////////////////////////////////////////////////////////////////////////////////
   // Public Methods                                                                     //
   ////////////////////////////////////////////////////////////////////////////////////////
   public function execute() {
     $task = ((isset($_POST['task'])) ? esc_html(stripslashes($_POST['task'])) : '');
+
+    if($task != ''){
+      if(!WDWLibrary::verify_nonce('uninstall_bwg')){
+        die('Sorry, your nonce did not verify.');
+      }
+    }
+
     if (method_exists($this, $task)) {
       $this->$task();
     }

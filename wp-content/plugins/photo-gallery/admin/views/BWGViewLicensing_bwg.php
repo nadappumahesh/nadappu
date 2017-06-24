@@ -24,165 +24,76 @@ class BWGViewLicensing_bwg {
   ////////////////////////////////////////////////////////////////////////////////////////
   public function display() {
     ?>
-    <div style="text-align:center; float: left;">
-      <table class="data-bordered">
-        <thead>
-          <tr>
-            <th class="top first" nowrap="nowrap" scope="col">Features of the Gallery</th>
-            <th class="top notranslate" nowrap="nowrap" scope="col">Free</th>
-            <th class="top notranslate" nowrap="nowrap" scope="col">Pro Version</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="alt">
-            <td>WordPress 3.4+ ready</td>
-            <td class="icon-replace yes">yes</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr>
-            <td>SEO-friendly</td>
-            <td class="icon-replace yes">yes</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr class="alt">
-            <td>Responsive Design and Layout</td>
-            <td class="icon-replace yes">yes</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr>
-            <td>Full Back End Management</td>
-            <td class="icon-replace yes">yes</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr class="alt">
-            <td>Watermarking Possibility</td>
-            <td class="icon-replace yes">yes</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr>
-            <td>Advertising Possibility</td>
-            <td class="icon-replace yes">yes</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr class="alt">
-            <td>Image Download</td>
-            <td class="icon-replace yes">yes</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr>
-            <td>Standard Thumbnails View</td>
-            <td class="icon-replace yes">yes</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr class="alt">
-            <td>Standard Slideshow View</td>
-            <td class="icon-replace yes">yes</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr>
-            <td>Standard Image Browser View</td>
-            <td class="icon-replace yes">yes</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr class="alt">
-            <td>Standard Compact Album</td>
-            <td class="icon-replace yes">yes</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr>
-            <td>Standard Extended Album</td>
-            <td class="icon-replace yes">yes</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr class="alt">
-            <td>Basic Tag Cloud Widget</td>
-            <td class="icon-replace yes">yes</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr>
-            <td>Photo Gallery Slideshow Widget</td>
-            <td class="icon-replace yes">yes</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr class="alt">
-            <td>Photo Gallery Widget</td>
-            <td class="icon-replace yes">yes</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr>
-            <td>Slideshow/Lightbox Effects</td>
-            <td style="text-align:center;">1</td>
-            <td style="text-align:center;">15</td>
-          </tr>
-          <tr class="alt">
-            <td>Possibility of Editing/Creating Themes</td>
-            <td class="icon-replace no">no</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr>
-            <td>Pro Masonry View </td>
-            <td class="icon-replace no">no</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr class="alt">
-            <td>Pro Blog Style View</td>
-            <td class="icon-replace no">no</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr>
-            <td>Pro Thumbnails View</td>
-            <td class="icon-replace no">no</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr class="alt">
-            <td>Pro Slideshow View</td>
-            <td class="icon-replace no">no</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr>
-            <td>Pro Image Browser View</td>
-            <td class="icon-replace no">no</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr class="alt">
-            <td>Pro Compact Album</td>
-            <td class="icon-replace no">no</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr>
-            <td>Pro Extended Album</td>
-            <td class="icon-replace no">no</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr class="alt">
-            <td>Image Commenting</td>
-            <td class="icon-replace no">no</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr>
-            <td>Image Social Sharing</td>
-            <td class="icon-replace no">no</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-          <tr class="alt">
-            <td>Photo Gallery Tags Cloud Widget</td>
-            <td class="icon-replace no">no</td>
-            <td class="icon-replace yes">yes</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <div style="float: right; text-align: right;">
-        <a style="text-decoration: none;" target="_blank" href="http://web-dorado.com/products/wordpress-photo-gallery-plugin.html">
-          <img width="215" border="0" alt="web-dorado.com" src="<?php echo WD_BWG_URL . '/images/logo.png'; ?>" />
-        </a>
+    <div id="featurs_tables">
+      <div id="featurs_table1">
+        <span>WordPress 3.4+ <?php _e("ready", 'bwg_back'); ?></span>
+        <span>SEO-<?php _e("friendly", 'bwg_back'); ?></span>
+        <span><?php _e("Responsive Design and Layout", 'bwg_back'); ?></span>
+        <span><?php _e("5 Standard Gallery/Album Views", 'bwg_back'); ?></span>
+        <span><?php _e("Watermarking/ Advertising Possibility", 'bwg_back'); ?></span>
+        <span><?php _e("Basic Tag Cloud Widget", 'bwg_back'); ?></span>
+        <span><?php _e("Image Download", 'bwg_back'); ?></span>
+        <span><?php _e("Photo Gallery Slideshow Widget", 'bwg_back'); ?></span>
+        <span><?php _e("Photo Gallery Widget", 'bwg_back'); ?></span>
+        <span><?php _e("Slideshow/Lightbox Effects", 'bwg_back'); ?></span>
+        <span><?php _e("Possibility of Editing/Creating New Themes", 'bwg_back'); ?></span>
+        <span><?php _e("10 Pro Gallery/Album Views", 'bwg_back'); ?></span>
+        <span><?php _e("Image Commenting", 'bwg_back'); ?></span>
+        <span><?php _e("Image Social Sharing", 'bwg_back'); ?></span>
+        <span><?php _e("Photo Gallery Tags Cloud Widget", 'bwg_back'); ?></span>
+        <span><?php _e("Instagram Integration", 'bwg_back'); ?></span>
+        <span>AddThis <?php _e("Integration", 'bwg_back'); ?></span>
+        <span><?php _e("Add-ons Support", 'bwg_back'); ?></span>
       </div>
+      <div id="featurs_table2">
+        <span style="padding-top: 18px;height: 39px;"><?php _e("Free", 'bwg_back'); ?></span>
+        <span class="yes"></span>
+        <span class="yes"></span>
+        <span class="yes"></span>
+        <span class="yes"></span>
+        <span class="yes"></span>
+        <span class="yes"></span>
+        <span class="yes"></span>
+        <span class="yes"></span>
+        <span class="yes"></span>
+        <span>1</span>
+        <span class="no"></span>
+        <span class="no"></span>
+        <span class="no"></span>
+        <span class="no"></span>
+        <span class="no"></span>
+        <span class="no"></span>
+        <span class="no"></span>
+        <span class="no"></span>
+      </div>
+      <div id="featurs_table3">
+        <span><?php _e("Pro Version", 'bwg_back'); ?></span>
+        <span class="yes"></span>
+        <span class="yes"></span>
+        <span class="yes"></span>
+        <span class="yes"></span>
+        <span class="yes"></span>
+        <span class="yes"></span>
+        <span class="yes"></span>
+        <span class="yes"></span>
+        <span class="yes"></span>
+        <span>15</span>
+        <span class="yes"></span>
+        <span class="yes"></span>
+        <span class="yes"></span>
+        <span class="yes"></span>
+        <span class="yes"></span>
+        <span class="yes"></span>
+        <span class="yes"></span>
+        <span class="yes"></span>
+      </div>
+    </div>
     <div style="float: left; clear: both;">
-      <p>After purchasing the commercial version follow these steps:</p>
+      <p><?php _e("After purchasing the commercial version follow these steps:", 'bwg_back'); ?></p>
       <ol>
-        <li>Deactivate Photo Gallery plugin.</li>
-        <li>Delete Photo Gallery plugin.</li>
-        <li>Install the downloaded commercial version of the plugin.</li>
+        <li><?php _e("Deactivate Photo Gallery plugin.", 'bwg_back'); ?></li>
+        <li><?php _e("Delete Photo Gallery plugin.", 'bwg_back'); ?></li>
+        <li><?php _e("Install the downloaded commercial version of the plugin.", 'bwg_back'); ?></li>
       </ol>
     </div>
     <?php

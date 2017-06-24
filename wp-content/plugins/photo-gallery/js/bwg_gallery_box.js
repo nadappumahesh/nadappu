@@ -1,13 +1,14 @@
 var isPopUpOpened = false;
 
-function spider_createpopup(url, current_view, width, height, duration, description, lifetime) {
+function spider_createpopup(url, current_view, width, height, duration, description, lifetime, lightbox_ctrl_btn_pos) {
+  url = url.replace(/&#038;/g, '&');
   if (isPopUpOpened) { return };
   isPopUpOpened = true;
   if (spider_hasalreadyreceivedpopup(description) || spider_isunsupporteduseragent()) {
     return;
   }
   jQuery("html").attr("style", "overflow:hidden !important;");
-  jQuery("#spider_popup_loading_" + current_view).css({display: "block"});
+  jQuery("#bwg_spider_popup_loading_" + current_view).css({display: "block"});
   jQuery("#spider_popup_overlay_" + current_view).css({display: "block"});
 
   jQuery.get(url, function(data) {
@@ -21,16 +22,16 @@ function spider_createpopup(url, current_view, width, height, duration, descript
     '</div>')
 			.hide()
 			.appendTo("body");
-		spider_showpopup(description, lifetime, popup, duration);
+		spider_showpopup(description, lifetime, popup, duration, lightbox_ctrl_btn_pos);
 	}).success(function(jqXHR, textStatus, errorThrown) {
-    jQuery("#spider_popup_loading_" + current_view).css({display: "none !important;"});
+    jQuery("#bwg_spider_popup_loading_" + current_view).css({display: "none !important;"});
   });
 }
 
-function spider_showpopup(description, lifetime, popup, duration) {
+function spider_showpopup(description, lifetime, popup, duration, lightbox_ctrl_btn_pos) {
   isPopUpOpened = true;
   popup.show();
-	spider_receivedpopup(description, lifetime);
+	spider_receivedpopup(description, lifetime, lightbox_ctrl_btn_pos);
 }
 
 function spider_hasalreadyreceivedpopup(description) {
@@ -40,14 +41,20 @@ function spider_hasalreadyreceivedpopup(description) {
 	return false; 
 }
 
-function spider_receivedpopup(description, lifetime) { 
+function spider_receivedpopup(description, lifetime, lightbox_ctrl_btn_pos) { 
 	var date = new Date(); 
 	date.setDate(date.getDate() + lifetime);
 	document.cookie = description + "=true;expires=" + date.toUTCString() + ";path=/"; 
+  if (lightbox_ctrl_btn_pos == 'bottom') {
+    jQuery(".bwg_toggle_container").css("bottom", jQuery(".bwg_ctrl_btn_container").height() + "px");
+  }
+  else if (lightbox_ctrl_btn_pos == 'top') {
+    jQuery(".bwg_toggle_container").css("top", jQuery(".bwg_ctrl_btn_container").height() + "px");
+  }
 }
 
 function spider_isunsupporteduseragent() {
-	return (!window.XMLHttpRequest); 
+	return (!window.XMLHttpRequest);
 }
 
 function spider_destroypopup(duration) {
@@ -57,9 +64,12 @@ function spider_destroypopup(duration) {
         jQuery.fullscreen.exit();
       }
     }
+    if (typeof enable_addthis != "undefined" && enable_addthis) {
+      jQuery(".at4-share-outer").hide();
+    }
     setTimeout(function () {
       jQuery(".spider_popup_wrap").remove();
-      jQuery(".spider_popup_loading").css({display: "none"});
+      jQuery(".bwg_spider_popup_loading").css({display: "none"});
       jQuery(".spider_popup_overlay").css({display: "none"});
       jQuery(document).off("keydown");
       jQuery("html").attr("style", "overflow:auto !important");
@@ -84,6 +94,8 @@ function spider_ajax_save(form_id) {
   post_data["ajax_task"] = jQuery("#ajax_task").val();
   post_data["image_id"] = jQuery("#image_id").val();
   post_data["comment_id"] = jQuery("#comment_id").val();
+    post_data["bwg_tag_id_" + id] = jQuery("#bwg_tag_id_" + id).val();
+
   // Loading.
   jQuery("#ajax_loading").css('height', jQuery(".bwg_comments").css('height'));
   jQuery("#opacity_div").css('width', jQuery(".bwg_comments").css('width'));

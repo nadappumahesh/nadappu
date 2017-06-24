@@ -4,36 +4,50 @@
  * Time: 3:56 PM
  */
 
-
-////////////////////////////////////////////////////////////////////////////////////////
-// Events                                                                             //
-////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////
-// Constants                                                                          //
-////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////
-// Variables                                                                          //
-////////////////////////////////////////////////////////////////////////////////////////
 var keyFileSelected;
 var keyFileSelectedML;
 var filesSelected;
-var filesSelectedML;
 var dragFiles;
 var isUploading;
 
+var ajax = true;
 
-////////////////////////////////////////////////////////////////////////////////////////
-// Constructor                                                                        //
-////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////
-// Public Methods                                                                     //
-////////////////////////////////////////////////////////////////////////////////////////
+var all_files_selected = false;
+var no_selected_files = [];
+
 jQuery(document).ready(function () {
+  var elements = 2;
+  var all_item_count = jQuery("#explorer_body_container #explorer_body").data("files_count");
+  jQuery("#explorer_body_container").scroll(function () {
+    var explorer_item_count = jQuery("#explorer_body .explorer_item").length;
+    if (ajax && explorer_item_count < all_item_count) {
+      var scroll = jQuery(this).scrollTop();
+      var scroll_position = jQuery(this).scrollTop() + jQuery(this).innerHeight();
+      var scroll_Height = jQuery(this)[0].scrollHeight;
+      if (scroll_position >= scroll_Height) {
+        var start_count = (elements-1)*element_load_count;
+        var end_count = elements*element_load_count;
+        var next_files = wdb_all_files.slice(start_count, end_count);
+        ajax_print_images(next_files, jQuery("#explorer_body"), 'explorer_item', start_count);
+        elements++;
+      }
+    }
+  });
+
+  var all_images_count = jQuery("#file_manager .item_thumb img").length;
+  if (!all_images_count) {
+    setTimeout(function(){jQuery(document).trigger("onUpload")});
+  }
+  else {
+    setTimeout(function(){jQuery(document).trigger("onSelectAllImage")});
+  }
+  if (all_images_count == 0 || all_images_count <= 24) {
+    loaded();
+  }
+  setTimeout(function(){loaded()}, 10000);
   filesSelected = [];
-  filesSelectedML = [];
   dragFiles = [];
 
-  //file manager under system messages
   jQuery("#wrapper").css("top", jQuery("#file_manager_message").css("height"));
   jQuery(window).resize(function () {
     jQuery("#container").css("top", jQuery("#file_manager_message").css("height"));
@@ -49,22 +63,48 @@ jQuery(document).ready(function () {
   jQuery(document).keydown(function(e) {
     onKeyDown(e);
   });
+  jQuery("#search_by_name .search_by_name").on("input keyup", function() {
+    var search_by_name = jQuery(this).val().toLowerCase();
+    if (search_by_name) {
+      jQuery("#explorer_body .explorer_item").hide();
+      jQuery("#explorer_body .explorer_item").each(function () {
+        var filename = jQuery(this).attr("filename").toLowerCase();
+        if (filename.indexOf(search_by_name) != -1) {
+          jQuery(this).show();
+        }
+      });
+    }
+    else {
+      jQuery("#explorer_body .explorer_item").show();
+    }
+  });
 });
 
+function loaded() {
+  jQuery("#opacity_div").hide();
+  jQuery("#loading_div").hide();
+}
 
-////////////////////////////////////////////////////////////////////////////////////////
-// Getters & Setters                                                                  //
-////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////
-// Private Methods                                                                    //
-////////////////////////////////////////////////////////////////////////////////////////
 function getClipboardFiles() {
   return jQuery("form[name=adminForm]").find("input[name=clipboard_file]").val();
 }
 
 function submit(task, sortBy, sortOrder, itemsView, destDir, fileNewName, newDirName, clipboardTask, clipboardFiles, clipboardSrc, clipboardDest) {
-  fileNames = filesSelected.join("**#**");
-  fileNamesML = filesSelectedML.join("**@**");
+  var names_array = [];
+  if (all_files_selected === true) {
+    for (i in wdb_all_files) {
+      var index = no_selected_files.indexOf(wdb_all_files[i]["name"]);
+      if (index < 0) {
+        var all_names = wdb_all_files[i]["name"];
+        names_array.push(all_names);
+      }
+    }
+    fileNames = names_array.join("**#**");
+  }
+  else {
+    fileNames = filesSelected.join("**#**");
+  }
+
   switch (task) {
     case "rename_item":
       destDir = dir;
@@ -112,15 +152,11 @@ function submit(task, sortBy, sortOrder, itemsView, destDir, fileNewName, newDir
   if (itemsView != null) {
     jQuery("form[name=adminForm]").find("input[name=items_view]").val(itemsView);
   }
-
   if (destDir != null) {
     jQuery("form[name=adminForm]").find("input[name=dir]").val(destDir);
   }
   if (fileNames != null) {
     jQuery("form[name=adminForm]").find("input[name=file_names]").val(fileNames);
-  }
-  if (fileNamesML != null) {
-    jQuery("form[name=adminForm]").find("input[name=file_namesML]").val(fileNamesML);
   }
   if (fileNewName != null) {
     jQuery("form[name=adminForm]").find("input[name=file_new_name]").val(fileNewName);
@@ -128,7 +164,6 @@ function submit(task, sortBy, sortOrder, itemsView, destDir, fileNewName, newDir
   if (newDirName != null) {
     jQuery("form[name=adminForm]").find("input[name=new_dir_name]").val(newDirName);
   }
-
   if (clipboardTask != null) {
     jQuery("form[name=adminForm]").find("input[name=clipboard_task]").val(clipboardTask);
   }
@@ -156,42 +191,71 @@ function updateFileNames() {
   jQuery("#file_names_span span").html(result);
 }
 
-
-// submit file
 function submitFiles() {
   if (filesSelected.length == 0) {
     return;
   }
+
   var filesValid = [];
-  for (var i = 0; i < filesSelected.length; i++) {
-    var file_object = jQuery('.explorer_item[name="' + filesSelected[i] + '"]');
-    if (jQuery(file_object).attr("isDir") == "false") {
+  if (all_files_selected === true) {
+    for (i in wdb_all_files) {
       var fileData = [];
-      fileData['name'] = filesSelected[i];
-      fileData['filename'] = jQuery(file_object).attr("filename");
-      fileData['url'] = dir + "/" + filesSelected[i];
-      fileData['reliative_url'] = dirUrl + "/" + filesSelected[i];
-      fileData['thumb_url'] = dir + "/thumb/" + filesSelected[i];
-      fileData['thumb'] = jQuery(file_object).attr("filethumb");
-      fileData['size'] = jQuery(file_object).attr("filesize");
-      fileData['filetype'] = jQuery(file_object).attr("filetype");
-      fileData['date_modified'] = jQuery(file_object).attr("date_modified");
-      fileData['resolution'] = jQuery(file_object).attr("fileresolution");
-      filesValid.push(fileData);
+      if (wdb_all_files[i]["is_dir"] === false) {
+        var index = no_selected_files.indexOf(wdb_all_files[i]["name"]);
+        if (index < 0) {
+          fileData['name'] = wdb_all_files[i]["name"];
+          fileData['filename'] = wdb_all_files[i]["filename"];;
+          fileData['alt'] = wdb_all_files[i]["alt"];;
+          fileData['url'] = dir + "/" + wdb_all_files[i]["name"];
+          fileData['reliative_url'] = dirUrl + "/" + wdb_all_files[i]["name"];
+          fileData['thumb_url'] = dir + "/thumb/" + wdb_all_files[i]["name"];
+          fileData['thumb'] = wdb_all_files[i]["thumb"];
+          fileData['size'] = wdb_all_files[i]["size"];
+          fileData['filetype'] = wdb_all_files[i]["type"];
+          fileData['date_modified'] = wdb_all_files[i]["date_modified"];
+          fileData['resolution'] = wdb_all_files[i]["resolution"];
+          fileData['aperture'] = wdb_all_files[i]["aperture"];
+          fileData['credit'] = wdb_all_files[i]["credit"];
+          fileData['camera'] =wdb_all_files[i]["camera"];
+          fileData['caption'] = wdb_all_files[i]["caption"];
+          fileData['iso'] = wdb_all_files[i]["iso"];
+          fileData['orientation'] = wdb_all_files[i]["orientation"];
+          fileData['copyright'] = wdb_all_files[i]["copyright"];
+          filesValid.push(fileData);
+        }
+      }
     }
   }
+  else {
+    for (var i = 0; i < filesSelected.length; i++) {
+      var file_object = jQuery('.explorer_item[name="' + filesSelected[i] + '"]');
+      if (jQuery(file_object).attr("isDir") == "false") {
+        var fileData = [];
+        fileData['name'] = filesSelected[i];
+        fileData['filename'] = jQuery(file_object).attr("filename");
+        fileData['alt'] = jQuery(file_object).attr("alt");
+        fileData['url'] = dir + "/" + filesSelected[i];
+        fileData['reliative_url'] = dirUrl + "/" + filesSelected[i];
+        fileData['thumb_url'] = dir + "/thumb/" + filesSelected[i];
+        fileData['thumb'] = jQuery(file_object).attr("filethumb");
+        fileData['size'] = jQuery(file_object).attr("filesize");
+        fileData['filetype'] = jQuery(file_object).attr("filetype");
+        fileData['date_modified'] = jQuery(file_object).attr("date_modified");
+        fileData['resolution'] = jQuery(file_object).attr("fileresolution");
+        fileData['aperture'] = jQuery(file_object).attr("fileAperture");
+        fileData['credit'] = jQuery(file_object).attr("fileCredit");
+        fileData['camera'] = jQuery(file_object).attr("fileCamera");
+        fileData['caption'] = jQuery(file_object).attr("fileCaption");
+        fileData['iso'] = jQuery(file_object).attr("fileIso");
+        fileData['orientation'] = jQuery(file_object).attr("fileOrientation");
+        fileData['copyright'] = jQuery(file_object).attr("fileCopyright");
+        filesValid.push(fileData);
+      }
+    }
+  }
+
   window.parent[callback](filesValid);
   window.parent.tb_remove();
-}
-
-function importFiles() {
-  if (filesSelectedML.length == 0) {
-    alert("Select at least one file to import.");
-    return;
-  }
-  else {
-    submit("import_items", null, null, null, null, null, null, null, null, null, dir);
-  }
 }
 
 function getScrollBarWidth() {
@@ -231,9 +295,6 @@ function getFileExtension(file) {
 }
 
 
-////////////////////////////////////////////////////////////////////////////////////////
-// Listeners                                                                          //
-////////////////////////////////////////////////////////////////////////////////////////
 //ctrls bar handlers
 function onBtnUpClick(event, obj) {
   var destDir = dir.substring(0, dir.lastIndexOf(DS));
@@ -243,7 +304,7 @@ function onBtnUpClick(event, obj) {
 function onBtnMakeDirClick(event, obj) {
   var newDirName = prompt(messageEnterDirName);
   if ((newDirName) && (newDirName != "")) {
-    submit("make_dir", null, null, null, null, null, newDirName, null, null, null, null);
+    submit("make_dir", null, null, null, null, null, newDirName.replace(/ /g, "_"), null, null, null, null);
   }
 }
 
@@ -251,20 +312,45 @@ function onBtnRenameItemClick(event, obj) {
   if (filesSelected.length != 0) {
     var newName = prompt(messageEnterNewName, getFileName(filesSelected[0]));
     if ((newName != null) && (newName != "")) {
-      submit("rename_item", null, null, null, null, newName, null, null, null, null, null);
+      submit("rename_item", null, null, null, null, newName.replace(/ /g, "_").replace(/%/g, ""), null, null, null, null, null);
     }
   }
 }
 
 function onBtnCopyClick(event, obj) {
   if (filesSelected.length != 0) {
-    submit("", null, null, null, null, null, null, "copy", filesSelected.join("**#**"), dir, null);
+    var names_list =  filesSelected.join("**#**");
+    var names_array = [];
+    if (all_files_selected === true) {
+      for (i in wdb_all_files) {
+        var index = no_selected_files.indexOf(wdb_all_files[i]["name"]);
+        if (index < 0) {
+          var all_names = wdb_all_files[i]["name"];
+          names_array.push(all_names);
+        }
+      }
+      names_list =  names_array.join("**#**");
+    }
+
+    submit("", null, null, null, null, null, null, "copy", names_list, dir, null);
   }
 }
 
 function onBtnCutClick(event, obj) {
   if (filesSelected.length != 0) {
-    submit("", null, null, null, null, null, null, "cut", filesSelected.join("**#**"), dir, null);
+    var names_list =  filesSelected.join("**#**");
+    var names_array = [];
+    if (all_files_selected === true) {
+      for (i in wdb_all_files) {
+        var index = no_selected_files.indexOf(wdb_all_files[i]["name"]);
+        if (index < 0) {
+          var all_names = wdb_all_files[i]["name"];
+          names_array.push(all_names);
+        }
+      }
+      names_list =  names_array.join("**#**");
+    }
+    submit("", null, null, null, null, null, null, "cut", names_list, dir, null);
   }
 }
 
@@ -281,6 +367,7 @@ function onBtnRemoveItemsClick(event, obj) {
 }
 
 function onBtnShowUploaderClick(event, obj) {
+  jQuery(document).trigger("onUploadFilesPressed");
   jQuery("#uploader").fadeIn();
 }
 
@@ -301,7 +388,14 @@ function onBtnBackClick(event, obj) {
 }
 
 
-function onPathComponentClick(event, obj, path) {
+function onPathComponentClick(event, obj, key) {
+  if (typeof key != "undefined" && key == 0) {
+    path = "";
+  }
+  else {
+    path = jQuery(obj).html();
+    path = path.trim();
+  }
   submit("", null, null, null, path, null, null, null, null, null, null);
 }
 
@@ -330,22 +424,15 @@ function onKeyDown(e) {
   var e = e || window.event;
   var chCode1 = e.which || e.paramlist_keyCode;
   if ((e.ctrlKey || e.metaKey) && chCode1 == 65) {
+    all_files_selected = true;
     jQuery(".explorer_item").addClass("explorer_item_select");
     jQuery(".importer_item").addClass("importer_item_select");
     filesSelected = [];
-    filesSelectedML = [];
     jQuery(".explorer_item").each(function() {
       var objName = jQuery(this).attr("name");
       if (filesSelected.indexOf(objName) == -1) {
         filesSelected.push(objName);
         keyFileSelected = this;
-      }
-    });
-    jQuery(".importer_item").each(function() {
-      var objName = jQuery(this).attr("path");
-      if (filesSelectedML.indexOf(objName) == -1) {
-        filesSelectedML.push(objName);
-        keyFileSelectedML = this;
       }
     });
     e.preventDefault();
@@ -356,22 +443,25 @@ function onFileMOver(event, obj) {
   jQuery(obj).addClass("explorer_item_hover");
 }
 
-function onFileMOverML(event, obj) {
-  jQuery(obj).addClass("importer_item_hover");
-}
-
 function onFileMOut(event, obj) {
   jQuery(obj).removeClass("explorer_item_hover");
-}
-
-function onFileMOutML(event, obj) {
-  jQuery(obj).removeClass("importer_item_hover");
 }
 
 function onFileClick(event, obj) {
   jQuery(".explorer_item").removeClass("explorer_item_select");
   var objName = jQuery(obj).attr("name");
   if (event.ctrlKey == true || event.metaKey == true) {
+    if (all_files_selected === true) {
+      if (filesSelected.indexOf(objName) == -1) {
+        var index = no_selected_files.indexOf(objName);
+        if (index >= 0) {
+          no_selected_files.splice( index, 1 );
+        }
+      }
+      else {
+        no_selected_files.push(objName);
+      }
+    }
     if (filesSelected.indexOf(objName) == -1) {
       filesSelected.push(objName);
       keyFileSelected = obj;
@@ -403,41 +493,6 @@ function onFileClick(event, obj) {
   updateFileNames();
 }
 
-function onFileClickML(event, obj) {
-  jQuery(".importer_item").removeClass("importer_item_select");
-  var objName = jQuery(obj).attr("path");
-  if (event.ctrlKey == true || event.metaKey == true) {
-    if (filesSelectedML.indexOf(objName) == -1) {
-      filesSelectedML.push(objName);
-      keyFileSelectedML = obj;
-    }
-    else {
-      filesSelectedML.splice(filesSelectedML.indexOf(objName), 1);
-      jQuery(obj).removeClass("importer_item_select");
-    }
-  }
-  else if (event.shiftKey == true) {
-    filesSelectedML = [];
-    var explorerItems = jQuery(".importer_item");
-    var curFileIndex = explorerItems.index(jQuery(obj));
-    var keyFileIndex = explorerItems.index(keyFileSelectedML);
-    var startIndex = Math.min(keyFileIndex, curFileIndex);
-    var endIndex = startIndex + Math.abs(curFileIndex - keyFileIndex);
-    for (var i = startIndex; i < endIndex + 1; i++) {
-      filesSelectedML.push(jQuery(explorerItems[i]).attr("path"));
-    }
-  }
-  else {
-    filesSelectedML = [jQuery(obj).attr("path")];
-    keyFileSelectedML = obj;
-  }
-
-  for (var i = 0; i < filesSelectedML.length; i++) {
-    jQuery(".importer_item[path='" + filesSelectedML[i] + "']").addClass("importer_item_select");
-  }
-  updateFileNames();
-}
-
 function onFileDblClick(event, obj) {
   if (jQuery(obj).attr("isDir") == "true") {
     submit("", null, null, null, dir + DS + jQuery(obj).attr("name"), null, null, null, null, null, null);
@@ -447,12 +502,6 @@ function onFileDblClick(event, obj) {
     filesSelected.push(jQuery(obj).attr("name"));
     submitFiles();
   }
-}
-
-function onFileDblClickML(event, obj) {
-  filesSelectedML = [];
-  filesSelectedML.push(jQuery(obj).attr("path"));
-  importFiles();
 }
 
 function onFileDragStart(event, obj) {
@@ -515,34 +564,89 @@ function onBtnOpenClick(event, obj) {
   }
 }
 
-function onBtnImportClick(event, obj) {
-  importFiles();
-}
-
 function onBtnCancelClick(event, obj) {
   window.parent.tb_remove();
 }
 
 function onBtnSelectAllClick() {
-  jQuery(".explorer_item").addClass("explorer_item_select");
+  jQuery(".explorer_item").removeClass("explorer_item_select");
+  jQuery(".explorer_item:visible").addClass("explorer_item_select");
   filesSelected = [];
-  jQuery(".explorer_item").each(function() {
+  jQuery(".explorer_item:visible").each(function() {
     var objName = jQuery(this).attr("name");
     if (filesSelected.indexOf(objName) == -1) {
       filesSelected.push(objName);
       keyFileSelected = this;
     }
   });
+  all_files_selected = true;
 }
 
-function onBtnSelectAllMediLibraryClick() {
-  jQuery(".importer_item").addClass("importer_item_select");
-  filesSelectedML = [];
-  jQuery(".importer_item").each(function() {
-    var objName = jQuery(this).attr("path");
-    if (filesSelectedML.indexOf(objName) == -1) {
-      filesSelectedML.push(objName);
-      keyFileSelectedML = this;
+function ajax_print_images(files, element, view_type, count) {
+  for (i in files) {
+    var corent_file = files[i];
+    var name = corent_file["name"];
+    var filename = corent_file["filename"];
+    var filethumb = corent_file["thumb"];
+    var filesize = corent_file["size"];
+    var filetype = corent_file["type"];
+    var date_modified = corent_file["date_modified"];
+    var fileresolution = corent_file["resolution"];
+    var fileCredit = corent_file["credit"];
+    var fileAperture = corent_file["aperture"];
+    var fileCamera = corent_file["camera"];
+    var fileCaption = corent_file["caption"];
+    var fileIso = corent_file["iso"];
+    var fileOrientation = corent_file["orientation"];
+    var fileCopyright = corent_file["copyright"];
+    var onmouseover = "onFileMOver(event, this);";
+    var onmouseout = "onFileMOut(event, this);";
+    var onclick = "onFileClick(event, this);";
+    var ondblclick = "onFileDblClick(event, this);";
+    var ondragstart = "onFileDragStart(event, this);";
+    var ondragover = "";
+    var ondrop = "";
+    if (corent_file['is_dir'] == true) {
+      ondragover = "onFileDragOver(event, this);";
+      ondrop = "onFileDrop(event, this);";
     }
-  });
+    var isDir = false;
+    if (corent_file['is_dir'] === true) {
+      isDir = 'true';
+    }
+
+    var item_number = count;
+    count++;
+    var item_thumb = '<span class="item_thumb"><img src="' + corent_file['thumb'] + '"/></span>';
+    var item_icon = '<span class="item_icon"><img src="'+corent_file['icon']+'"/> </span>';
+    var item_name = '<span class="item_name">'+corent_file['name']+'</span>';
+    var item_size = '<span class="item_size">'+corent_file['size']+'</span>';
+    var item_date_modified = '<span class="item_date_modified">'+corent_file['date_modified']+'</span>';
+    var item_numbering =  '<span class="item_numbering">'+item_number+'</span>';
+    var explorer_item = '<div class="explorer_item" ' +
+      'name="' + name + '" ' +
+      'filename="' + filename + '" ' +
+      'filethumb="' + filethumb + '" ' +
+      'filesize="' + filesize + '" ' +
+      'filetype="' + filetype + '" ' +
+      'date_modified="' + date_modified + '" ' +
+      'fileresolution="' + fileresolution + '" ' +
+      'fileCredit="' + fileCredit + '" ' +
+      'fileAperture="' + fileAperture + '" ' +
+      'fileCamera="' + fileCamera + '" ' +
+      'fileCaption="' + fileCaption + '" ' +
+      'fileIso="' + fileIso + '" ' +
+      'fileOrientation="' + fileOrientation + '" ' +
+      'fileCopyright="' + fileCopyright + '" ' +
+      'isDir="' + isDir + '" ' +
+      'onmouseover="' + onmouseover + '" ' +
+      'onmouseout="' + onmouseout + '" ' +
+      'onclick="' + onclick + '" ' +
+      'ondblclick="' + ondblclick + '" ' +
+      'ondragstart="' + ondragstart + '" ' +
+      'ondragover="' + ondragover + '" ' +
+      'ondrop="' + ondrop + '" ' +
+      'draggable="true">'+item_numbering + item_thumb + item_icon+item_name+item_size+item_date_modified+'</div>';
+    element.append(explorer_item);
+  }
 }
